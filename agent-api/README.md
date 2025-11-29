@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # ☁️ Scarmonit Agent API
 
 > **Cloudflare Worker for MCP proxy and agent orchestration**
@@ -110,24 +109,85 @@ Response:
 }
 ```
 
-### Autonomous Agent Task Management
+### Innovative Solutions API
 
-The Agent API supports autonomous agent workflows including task submission, complex problem analysis, and agent clarification requests.
+These endpoints implement the innovative solutions proposed by the autonomous agent for system integration.
 
-#### Submit Task
-
-Submit a task with context for an autonomous agent:
+#### List Solutions
 
 ```bash
-POST https://agent-api.scarmonit.workers.dev/api/tasks
+GET https://agent-api.scarmonit.workers.dev/api/solutions
+GET https://agent-api.scarmonit.workers.dev/api/solutions?category=ai_integration
+GET https://agent-api.scarmonit.workers.dev/api/solutions?status=proposed&priority=high
+```
+
+Response:
+```json
+{
+  "total": 10,
+  "solutions": [
+    {
+      "id": "sol-001",
+      "name": "API Gateway Optimization",
+      "category": "api_gateway",
+      "description": "Smart API gateway using ML algorithms...",
+      "status": "proposed",
+      "priority": "high",
+      "benefits": ["Reduced latency", "Improved performance"],
+      "createdAt": "2025-11-29T00:00:00.000Z",
+      "updatedAt": "2025-11-29T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### Get Solution Details
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/solutions/:id
+```
+
+#### Create Custom Solution
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/solutions
 Content-Type: application/json
 
 {
-  "task": "Analyze market trends in healthcare AI",
-  "domain": "healthcare",
-  "stakeholders": ["hospitals", "patients", "insurance"],
-  "dataTypes": ["text", "spreadsheets"],
-  "additionalContext": "Focus on diagnostic AI solutions"
+  "name": "Custom Integration",
+  "category": "ai_integration",
+  "description": "Description of the solution",
+  "status": "proposed",
+  "priority": "medium",
+  "benefits": ["Benefit 1", "Benefit 2"]
+}
+```
+
+#### Update Solution Status
+
+```bash
+PATCH https://agent-api.scarmonit.workers.dev/api/solutions/:id
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+```
+
+### Event-Driven Architecture API
+
+These endpoints support event-driven communication between systems.
+
+#### Publish Event
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/events
+Content-Type: application/json
+
+{
+  "type": "integration.updated",
+  "source": "agent-service",
+  "data": { "solutionId": "sol-001", "action": "status_change" }
 }
 ```
 
@@ -135,84 +195,57 @@ Response:
 ```json
 {
   "success": true,
-  "taskId": "task:1732889123456",
-  "message": "Task submitted successfully",
-  "status": "pending"
-}
-```
-
-#### List Tasks
-
-```bash
-GET https://agent-api.scarmonit.workers.dev/api/tasks
-```
-
-#### Get Task Status
-
-```bash
-GET https://agent-api.scarmonit.workers.dev/api/tasks/:taskId
-```
-
-#### Analyze Complex Problem
-
-Submit a complex problem for AI analysis with full domain context:
-
-```bash
-POST https://agent-api.scarmonit.workers.dev/api/analyze-complex
-Content-Type: application/json
-
-{
-  "task": "Evaluate the feasibility of implementing blockchain for medical records",
-  "domain": "healthcare",
-  "stakeholders": ["hospitals", "patients", "regulators"],
-  "dataTypes": ["text", "urls"],
-  "sourceUrl": "https://example.com/research",
-  "additionalContext": "Consider HIPAA compliance requirements"
-}
-```
-
-Response:
-```json
-{
-  "success": true,
-  "taskId": "task:1732889123456",
-  "analysis": "...",
-  "data_requirements": ["patient consent data", "existing system architecture"],
-  "recommended_sources": ["CMS.gov", "academic papers"],
-  "risk_assessment": "medium",
-  "complexity_score": 7,
-  "next_steps": ["stakeholder interviews", "technical feasibility study"],
-  "clarification_questions": ["What is the current EMR system?"]
-}
-```
-
-#### Agent Clarification Request
-
-Handle agent feedback loops when more context is needed:
-
-```bash
-POST https://agent-api.scarmonit.workers.dev/api/tasks/:taskId/clarify
-Content-Type: application/json
-
-{
-  "domain": "technology",
-  "stakeholders": ["developers", "operations"],
-  "additionalContext": "Primary focus is on scalability"
-}
-```
-
-Response:
-```json
-{
-  "success": true,
-  "message": "Task updated with clarification",
-  "task": {
-    "taskId": "task:1732889123456",
-    "status": "in_progress",
-    "domain": "technology",
-    "stakeholders": ["developers", "operations"],
-    "lastUpdated": "2025-11-29T13:52:00.000Z"
+  "event": {
+    "id": "evt-1234567890",
+    "type": "integration.updated",
+    "source": "agent-service",
+    "data": { ... },
+    "timestamp": "2025-11-29T00:00:00.000Z",
+    "processed": false
   }
+}
+```
+
+#### List Events
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/events
+GET https://agent-api.scarmonit.workers.dev/api/events?type=integration.updated&limit=20
+```
+
+### Integration Status
+
+Real-time integration status and metrics.
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/integration-status
+```
+
+Response:
+```json
+{
+  "status": "operational",
+  "timestamp": "2025-11-29T00:00:00.000Z",
+  "metrics": {
+    "totalSolutions": 10,
+    "implemented": 0,
+    "inProgress": 1,
+    "proposed": 9,
+    "implementationRate": 0
+  },
+  "categories": {
+    "api_gateway": 1,
+    "data_streaming": 1,
+    "ai_integration": 1,
+    ...
+  },
+  "activeCapabilities": [
+    "AI Chat",
+    "Artifact Analysis",
+    "Agent Management",
+    "Event Publishing",
+    "Solution Tracking"
+  ]
 }
 ```
 
@@ -494,6 +527,3 @@ jobs:
 ## License
 
 MIT © Scarmonit Industries
-=======
-Successfully overwrote file: C:\Users\scarm\Scarmonit-Architecture\agent-api\README.md.
->>>>>>> Scarmonit

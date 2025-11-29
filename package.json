@@ -1,0 +1,25 @@
+{
+  "name": "scarmonit-architecture",
+  "version": "2.5.0",
+  "private": true,
+  "license": "MIT",
+  "workspaces": [
+    "web-portal",
+    "agent-api",
+    "desktop-app",
+    "copilot-extension",
+    "mcp-server",
+    "mcp-bridge",
+    "scarmonit-monitor"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "dev": "concurrently \"npm run dev -w web-portal\" \"npm run dev -w agent-api\" \"npm run start -w mcp-server\" \"npm run start -w mcp-bridge\"",
+    "build": "npm run build --workspaces",
+    "test": "npm test --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "http-server": "^14.1.1"
+  }
+}
