@@ -17,6 +17,9 @@ Scarmonit-Architecture/
 └── docs/                # Documentation
 ```
 
+## Jules Integration
+For specific instructions on configuring and using Jules with this repository, please refer to [JULES_SETUP.md](./JULES_SETUP.md).
+
 ## Always Do
 - Read existing code before making changes
 - Check `package.json` in each workspace before adding dependencies
