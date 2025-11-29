@@ -14,15 +14,15 @@ interface KVNamespace {
 
 // Mock KV for Local Node.js execution
 class MockKV {
-  store = new Map();
-  async list({ prefix = '' }: { prefix?: string }) {
+  store = new Map<string, string>();
+  async list({ prefix = '' }: { prefix?: string } = {}) {
     const keys = Array.from(this.store.keys())
       .filter(k => k.startsWith(prefix))
       .map(name => ({ name }));
     return { keys };
   }
-  async get(key) { return this.store.get(key) || null; }
-  async put(key, val) { this.store.set(key, val); }
+  async get(key: string) { return this.store.get(key) || null; }
+  async put(key: string, val: string) { this.store.set(key, val); }
 }
 
 // Singleton MockKV for local/test mode persistence
@@ -31,8 +31,21 @@ const mockKvSingleton = new MockKV();
 // Define bindings
 type Bindings = {
   AGENT_CACHE: KVNamespace;
-  AI: any; // Workers AI binding
+  AI: Ai;
 };
+
+// Agent task types
+type TaskStatus = 'pending' | 'completed' | 'failed';
+
+interface AgentTask {
+  id: string;
+  agentId: string;
+  task: string;
+  result: string;
+  status: TaskStatus;
+  timestamp: number;
+  metadata?: Record<string, unknown>;
+}
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -48,7 +61,7 @@ app.use('*', async (c, next) => {
     c.env.AGENT_CACHE = mockKvSingleton as any;
   }
   if (!c.env.AI) {
-    c.env.AI = { run: async () => ({ response: LOCAL_MODE_MESSAGE }) };
+    c.env.AI = { run: async () => ({ response: LOCAL_MODE_MESSAGE }) } as any;
     logger.debug('Injected AI mock binding');
   }
   await next();
@@ -177,6 +190,90 @@ app.get('/api/logs', async (c) => {
   return c.json(logs);
 });
 
+// --- AGENT TASK ENDPOINTS ---
+
+// Submit a completed agent task
+app.post('/api/agent-tasks', async (c) => {
+  try {
+    const body = await c.req.json();
+    
+    // Validate required fields
+    if (!body.task || !body.result) {
+      return c.json({ error: 'Missing required fields: task and result' }, 400);
+    }
+    
+    // Validate status if provided
+    const validStatuses: TaskStatus[] = ['pending', 'completed', 'failed'];
+    const status: TaskStatus = validStatuses.includes(body.status) ? body.status : 'pending';
+    
+    // Use crypto.randomUUID() for robust ID generation
+    const taskId = body.id || crypto.randomUUID();
+    
+    const task: AgentTask = {
+      id: `task:${taskId}`,
+      agentId: body.agentId || 'autonomous-agent',
+      task: body.task,
+      result: body.result,
+      status,
+      timestamp: Date.now(),
+      metadata: body.metadata
+    };
+    
+    await c.env.AGENT_CACHE.put(task.id, JSON.stringify(task));
+    
+    return c.json({
+      success: true, 
+      id: task.id,
+      message: 'Task recorded successfully'
+    });
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Failed to record task', details: errorMessage }, 500);
+  }
+});
+
+// Retrieve agent task history
+app.get('/api/agent-tasks', async (c) => {
+  try {
+    const list = await c.env.AGENT_CACHE.list({ prefix: 'task:' });
+    const tasks: AgentTask[] = [];
+    
+    for (const key of list.keys) {
+      const val = await c.env.AGENT_CACHE.get(key.name);
+      if (val) {
+        tasks.push(JSON.parse(val) as AgentTask);
+      }
+    }
+    
+    // Sort by timestamp descending (most recent first)
+    tasks.sort((a, b) => b.timestamp - a.timestamp);
+    
+    return c.json(tasks);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Failed to retrieve tasks', details: errorMessage }, 500);
+  }
+});
+
+// Get a specific agent task by ID
+app.get('/api/agent-tasks/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const taskId = id.startsWith('task:') ? id : `task:${id}`;
+    
+    const val = await c.env.AGENT_CACHE.get(taskId);
+    
+    if (!val) {
+      return c.json({ error: 'Task not found' }, 404);
+    }
+    
+    return c.json(JSON.parse(val) as AgentTask);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Failed to retrieve task', details: errorMessage }, 500);
+  }
+});
+
 export default app;
 
 // Schemas
@@ -187,4 +284,3 @@ const chatSchema = z.object({
 const analyzeSchema = z.object({ data: z.any(), type: z.string().min(1) });
 const agentSchema = z.object({ id: z.string().min(1), name: z.string().min(1), role: z.string().min(1) });
 const artifactSchema = z.object({ id: z.string().min(1), type: z.string().min(1), content: z.any() });
-
