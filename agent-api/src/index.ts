@@ -129,15 +129,16 @@ app.post('/api/insights', async (c) => {
   }
 
   const timestamp = Date.now();
-  const id = `insight:${body.id || timestamp}`;
+  const insightId = body.id || timestamp;
+  const id = `insight:${insightId}`;
   const insight = {
-    id: body.id || timestamp,
+    ...body,
+    id: insightId,
     title: body.title,
     content: body.content,
     category: body.category || 'general',
     source: body.source || 'autonomous-agent',
     createdAt: new Date(timestamp).toISOString(),
-    ...body,
   };
 
   await c.env.AGENT_CACHE.put(id, JSON.stringify(insight));
