@@ -262,7 +262,7 @@ If agent personas aren't loading in Copilot Chat:
 .\mcp-server\restart-mcp.ps1
 ```
 
-**Test Tools:
+**Test Tools:**
 ```
 Run MCP tool list_agents
 ```
