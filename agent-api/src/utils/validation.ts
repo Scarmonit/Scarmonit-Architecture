@@ -4,6 +4,7 @@
  */
 
 import { createLogger } from './logger'
+import { VALIDATION_LIMITS } from '../config/constants'
 
 const logger = createLogger('Validation')
 
@@ -35,14 +36,20 @@ export interface AgentRequest {
 }
 
 /**
- * Validates that a value is a non-empty string
+ * Validates that a value is a non-empty string.
+ * 
+ * @param value - The value to check
+ * @returns True if value is a non-empty string after trimming whitespace
  */
 export function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
 /**
- * Validates that a value is a valid chat message
+ * Validates that a value is a valid chat message.
+ * 
+ * @param value - The value to check
+ * @returns True if value is a valid ChatMessage with role and content
  */
 export function isValidChatMessage(value: unknown): value is ChatMessage {
   if (typeof value !== 'object' || value === null) {
@@ -58,7 +65,25 @@ export function isValidChatMessage(value: unknown): value is ChatMessage {
 }
 
 /**
- * Validates a chat request
+ * Calculates the approximate size of a JSON-serializable object.
+ * Used for input size validation to prevent memory issues.
+ * 
+ * @param data - The data to measure
+ * @returns The approximate size in bytes
+ */
+export function getDataSize(data: unknown): number {
+  try {
+    return JSON.stringify(data).length
+  } catch {
+    return 0
+  }
+}
+
+/**
+ * Validates a chat request.
+ * 
+ * @param body - The request body to validate
+ * @returns ValidationResult with valid flag and any error messages
  */
 export function validateChatRequest(body: unknown): ValidationResult {
   const errors: string[] = []
@@ -80,18 +105,26 @@ export function validateChatRequest(body: unknown): ValidationResult {
       errors.push('"messages" must be an array')
     } else if (request.messages.length === 0) {
       errors.push('"messages" array cannot be empty')
+    } else if (request.messages.length > VALIDATION_LIMITS.MAX_MESSAGES) {
+      errors.push(`"messages" array exceeds maximum length of ${VALIDATION_LIMITS.MAX_MESSAGES}`)
     } else {
       request.messages.forEach((msg, idx) => {
         if (!isValidChatMessage(msg)) {
           errors.push(`Invalid message at index ${idx}: must have valid role and content`)
+        } else if (typeof msg.content === 'string' && msg.content.length > VALIDATION_LIMITS.MAX_CONTENT_LENGTH) {
+          errors.push(`Message at index ${idx} exceeds maximum content length of ${VALIDATION_LIMITS.MAX_CONTENT_LENGTH}`)
         }
       })
     }
   }
 
   // Validate prompt if provided
-  if (request.prompt !== undefined && !isNonEmptyString(request.prompt)) {
-    errors.push('"prompt" must be a non-empty string')
+  if (request.prompt !== undefined) {
+    if (!isNonEmptyString(request.prompt)) {
+      errors.push('"prompt" must be a non-empty string')
+    } else if (typeof request.prompt === 'string' && request.prompt.length > VALIDATION_LIMITS.MAX_PROMPT_LENGTH) {
+      errors.push(`"prompt" exceeds maximum length of ${VALIDATION_LIMITS.MAX_PROMPT_LENGTH}`)
+    }
   }
 
   const result = { valid: errors.length === 0, errors }
@@ -102,7 +135,10 @@ export function validateChatRequest(body: unknown): ValidationResult {
 }
 
 /**
- * Validates an analyze request
+ * Validates an analyze request with input size limits.
+ * 
+ * @param body - The request body to validate
+ * @returns ValidationResult with valid flag and any error messages
  */
 export function validateAnalyzeRequest(body: unknown): ValidationResult {
   const errors: string[] = []
@@ -115,6 +151,12 @@ export function validateAnalyzeRequest(body: unknown): ValidationResult {
 
   if (request.data === undefined) {
     errors.push('"data" field is required')
+  } else {
+    // Validate data size to prevent oversized payloads
+    const dataSize = getDataSize(request.data)
+    if (dataSize > VALIDATION_LIMITS.MAX_CONTENT_LENGTH) {
+      errors.push(`"data" field exceeds maximum size of ${VALIDATION_LIMITS.MAX_CONTENT_LENGTH} bytes`)
+    }
   }
 
   if (!isNonEmptyString(request.type)) {
@@ -129,7 +171,10 @@ export function validateAnalyzeRequest(body: unknown): ValidationResult {
 }
 
 /**
- * Validates an agent request
+ * Validates an agent request.
+ * 
+ * @param body - The request body to validate
+ * @returns ValidationResult with valid flag and any error messages
  */
 export function validateAgentRequest(body: unknown): ValidationResult {
   const errors: string[] = []
@@ -156,7 +201,16 @@ export function validateAgentRequest(body: unknown): ValidationResult {
 }
 
 /**
- * Extracts error message from unknown error type
+ * Extracts error message from unknown error type.
+ * Safely handles Error objects, strings, and other types.
+ * 
+ * @param error - The error to extract message from
+ * @returns A string error message
+ * 
+ * @example
+ * getErrorMessage(new Error('Something failed')) // 'Something failed'
+ * getErrorMessage('Direct error string') // 'Direct error string'
+ * getErrorMessage({ unexpected: 'object' }) // 'An unknown error occurred'
  */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -169,7 +223,10 @@ export function getErrorMessage(error: unknown): string {
 }
 
 /**
- * Creates a validation error response
+ * Creates a validation error response object for API responses.
+ * 
+ * @param result - The validation result containing errors
+ * @returns A structured error response object
  */
 export function createValidationErrorResponse(result: ValidationResult): {
   error: string

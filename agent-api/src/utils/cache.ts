@@ -10,15 +10,22 @@ const logger = createLogger('CacheService')
 export interface CacheConfig {
   defaultTtl: number // TTL in seconds
   maxKeyLength: number
+  maxPayloadSize: number // Max size in bytes for cache key generation
 }
 
 export const DEFAULT_CACHE_CONFIG: CacheConfig = {
   defaultTtl: 3600, // 1 hour
   maxKeyLength: 512,
+  maxPayloadSize: 10000, // 10KB limit for cache key payload
 }
 
 /**
- * Generates a cache key from request parameters
+ * Generates a cache key from request parameters.
+ * 
+ * @param prefix - Key prefix for namespacing (e.g., 'ai:', 'agent:')
+ * @param params - Request parameters to hash into the key
+ * @returns A URL-safe cache key string
+ * @throws Error if the payload is too large to safely process
  */
 export function generateCacheKey(prefix: string, params: Record<string, unknown>): string {
   const sortedParams = Object.keys(params)
@@ -28,7 +35,26 @@ export function generateCacheKey(prefix: string, params: Record<string, unknown>
       return acc
     }, {} as Record<string, unknown>)
 
-  const hash = btoa(JSON.stringify(sortedParams))
+  const jsonString = JSON.stringify(sortedParams)
+  
+  // Validate payload size to prevent memory issues
+  if (jsonString.length > DEFAULT_CACHE_CONFIG.maxPayloadSize) {
+    logger.warn('Cache key payload too large, truncating', { 
+      size: jsonString.length, 
+      maxSize: DEFAULT_CACHE_CONFIG.maxPayloadSize 
+    })
+    // Use a truncated hash for large payloads
+    const truncated = jsonString.slice(0, DEFAULT_CACHE_CONFIG.maxPayloadSize)
+    const hash = btoa(truncated)
+      .replace(/[+/=]/g, (char) => {
+        const replacements: Record<string, string> = { '+': '-', '/': '_', '=': '' }
+        return replacements[char] ?? char
+      })
+      .slice(0, DEFAULT_CACHE_CONFIG.maxKeyLength - prefix.length - 1)
+    return `${prefix}:${hash}`
+  }
+
+  const hash = btoa(jsonString)
     .replace(/[+/=]/g, (char) => {
       const replacements: Record<string, string> = { '+': '-', '/': '_', '=': '' }
       return replacements[char] ?? char

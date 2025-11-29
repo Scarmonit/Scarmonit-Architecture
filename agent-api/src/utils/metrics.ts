@@ -1,6 +1,14 @@
 /**
  * Metrics utility for operational efficiency tracking
  * Tracks processing time, cache performance, and resource utilization
+ * 
+ * @note DISTRIBUTED ENVIRONMENT LIMITATION:
+ * This metrics collector uses in-memory storage which is NOT shared across
+ * multiple worker instances in a distributed edge environment. Each worker
+ * maintains its own metrics state. For production use, consider:
+ * - Using Cloudflare Analytics Engine for distributed metrics
+ * - Aggregating metrics to an external service like Prometheus or Datadog
+ * - Using KV or Durable Objects for shared state (with performance trade-offs)
  */
 
 import { createLogger } from './logger'
@@ -26,8 +34,11 @@ export interface AggregatedMetrics {
 }
 
 /**
- * In-memory metrics collector for edge efficiency
- * Note: In a distributed environment, metrics should be aggregated externally
+ * In-memory metrics collector for edge efficiency.
+ * 
+ * @note This collector stores metrics in-memory per worker instance.
+ * In a distributed edge environment, each worker maintains its own state.
+ * For accurate cross-instance metrics, use an external aggregation service.
  */
 export class MetricsCollector {
   private metrics: RequestMetrics[] = []
