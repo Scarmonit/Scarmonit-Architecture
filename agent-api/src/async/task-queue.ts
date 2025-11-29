@@ -51,6 +51,7 @@ export class AsyncTaskQueue<T = unknown> {
   private queue: Task<T>[] = [];
   private results: Map<string, TaskResult<T>> = new Map();
   private runningCount = 0;
+  private activePromises: Set<Promise<void>> = new Set();
   private readonly maxConcurrency: number;
   private readonly maxQueueSize: number;
   private readonly timeout: number;
@@ -91,28 +92,27 @@ export class AsyncTaskQueue<T = unknown> {
    * @returns Promise that resolves when all current tasks are processed
    */
   async processAll(): Promise<Map<string, TaskResult<T>>> {
-    const processingPromises: Promise<void>[] = [];
-
-    while (this.queue.length > 0 || this.runningCount > 0) {
+    while (this.queue.length > 0 || this.activePromises.size > 0) {
       // Start new tasks if we have capacity
       while (this.queue.length > 0 && this.runningCount < this.maxConcurrency) {
         const task = this.queue.shift();
         if (task) {
-          processingPromises.push(this.executeTask(task));
+          const taskPromise = this.executeTask(task);
+          this.activePromises.add(taskPromise);
+          
+          // Remove from active set when complete
+          taskPromise.finally(() => {
+            this.activePromises.delete(taskPromise);
+          });
         }
       }
 
-      // Wait for at least one task to complete if we're at max concurrency
-      if (this.runningCount >= this.maxConcurrency && processingPromises.length > 0) {
-        await Promise.race(processingPromises);
-      } else if (processingPromises.length > 0) {
-        // Give pending tasks a chance to start
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      // Wait for at least one task to complete if we're at max concurrency or have active tasks
+      if (this.activePromises.size > 0) {
+        await Promise.race(this.activePromises);
       }
     }
 
-    // Wait for all tasks to complete
-    await Promise.all(processingPromises);
     return this.results;
   }
 

@@ -29,14 +29,15 @@ export interface BackgroundTaskConfig {
  * Uses ctx.waitUntil() pattern for Cloudflare Workers
  */
 export class BackgroundTaskHandler {
-  private executionContext: ExecutionContext | null = null;
+  private executionContext: ExecutionContext | undefined;
   private readonly maxRetries: number;
   private readonly retryDelay: number;
-  private pendingTasks: Map<string, Promise<void>> = new Map();
+  private readonly pendingTasks: Map<string, Promise<void>> = new Map();
 
-  constructor(config: BackgroundTaskConfig = {}) {
+  constructor(config: BackgroundTaskConfig = {}, ctx?: ExecutionContext) {
     this.maxRetries = config.maxRetries ?? 3;
     this.retryDelay = config.retryDelay ?? 1000;
+    this.executionContext = ctx;
   }
 
   /**
@@ -44,7 +45,17 @@ export class BackgroundTaskHandler {
    * @param ctx - The Cloudflare Workers ExecutionContext
    */
   setContext(ctx: ExecutionContext): void {
-    this.executionContext = ctx;
+    if (!this.executionContext) {
+      this.executionContext = ctx;
+    }
+  }
+
+  /**
+   * Check if an execution context is set
+   * @returns boolean indicating if context is available
+   */
+  hasContext(): boolean {
+    return this.executionContext !== undefined;
   }
 
   /**

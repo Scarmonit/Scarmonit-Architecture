@@ -17,10 +17,11 @@ type Variables = {
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 // Initialize background task handler per request
+// Note: For full waitUntil support, the ExecutionContext must be passed via
+// the Hono app.fetch handler. This middleware provides the handler instance
+// that can be used for task queue operations within request handlers.
 app.use('*', async (c, next) => {
   const handler = new BackgroundTaskHandler({ maxRetries: 3 });
-  // Note: ExecutionContext is not directly available in Hono middleware
-  // The handler can be used for task queue operations
   c.set('backgroundHandler', handler);
   await next();
 });
