@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Scarmonit - AI-Powered Solutions & LLM Infrastructure">
+    <title>Scarmonit | AI & LLM Infrastructure</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo-section">
+                <div class="logo-icon">S</div>
+                <h1 class="logo-text">Scarmonit</h1>
+            </div>
+            <nav class="nav">
+                <a href="https://agent.scarmonit.com" class="nav-link">Agent Dashboard</a>
+                <a href="https://lm.scarmonit.com" class="nav-link">LM Studio</a>
+            </nav>
+        </header>
+
+        <main class="main">
+            <section class="hero">
+                <div class="hero-badge">
+                    <span class="badge-dot"></span>
+                    <span>Powered by AI</span>
+                </div>
+                <h2 class="hero-title">AI-Powered Infrastructure</h2>
+                <p class="hero-subtitle">Building the future with LLM agents, intelligent automation, and cutting-edge AI solutions</p>
+                
+                <div class="cta-buttons">
+                    <a href="https://agent.scarmonit.com" class="btn btn-primary">
+                        <span>Launch Agent Dashboard</span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </a>
+                    <a href="#services" class="btn btn-secondary">Explore Services</a>
+                </div>
+            </section>
+
+            <section class="services" id="services">
+                <div class="service-card">
+                    <div class="service-icon">🤖</div>
+                    <h3>AI Agent Dashboard</h3>
+                    <p>Interactive AI agent platform with real-time responses and intelligent automation</p>
+                    <a href="https://agent.scarmonit.com" class="service-link">Visit Dashboard →</a>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">🧠</div>
+                    <h3>LM Studio Endpoint</h3>
+                    <p>Local LLM inference with OpenAI-compatible API for seamless integration</p>
+                    <a href="https://lm.scarmonit.com" class="service-link">Access API →</a>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">⚡</div>
+                    <h3>Edge Infrastructure</h3>
+                    <p>Cloudflare Workers and edge computing for lightning-fast AI responses</p>
+                    <span class="service-link disabled">Coming Soon</span>
+                </div>
+            </section>
+
+            <section class="tech-stack">
+                <h3 class="section-title">Powered By</h3>
+                <div class="tech-grid">
+                    <div class="tech-item">Cloudflare Workers</div>
+                    <div class="tech-item">LM Studio</div>
+                    <div class="tech-item">Docker</div>
+                    <div class="tech-item">Kubernetes</div>
+                    <div class="tech-item">Terraform</div>
+                    <div class="tech-item">MCP Servers</div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2025 Scarmonit. Built with AI & automation.</p>
+            <div class="footer-links">
+                <span class="status-indicator">
+                    <span class="status-dot"></span>
+                    All Systems Operational
+                </span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

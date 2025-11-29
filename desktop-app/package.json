@@ -1,0 +1,30 @@
+{
+  "name": "ai-chat-desktop",
+  "version": "1.0.0",
+  "description": "Desktop AI Chat App powered by LM Studio",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "lm-studio",
+    "electron"
+  ],
+  "author": "Scarmonit",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.scarmonit.aichat",
+    "productName": "AI Chat",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    }
+  }
+}
