@@ -5,8 +5,22 @@ import { Ai } from '@cloudflare/ai';
 // Define bindings
 type Bindings = {
   AGENT_CACHE: KVNamespace;
-  AI: any; // Workers AI binding
+  AI: unknown; // Workers AI binding
 };
+
+// Task result status type
+type TaskResultStatus = 'pending' | 'completed' | 'failed';
+
+// Task result interface for autonomous agent task completions
+interface TaskResult {
+  id: string;
+  task: string;
+  result: string;
+  status: TaskResultStatus;
+  agentId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -27,7 +41,8 @@ app.post('/api/chat', async (c) => {
     });
     return c.json(response);
   } catch (e) {
-    return c.json({ error: 'AI Generation Failed', details: e.message }, 500);
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'AI Generation Failed', details: errorMessage }, 500);
   }
 });
 
@@ -107,6 +122,94 @@ app.get('/api/logs', async (c) => {
     if (val) logs.push(JSON.parse(val));
   }
   return c.json(logs);
+});
+
+// --- TASK RESULTS ENDPOINTS ---
+// Autonomous agent task completions
+
+// List all task results
+app.get('/api/task-results', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'task-result:' });
+  const taskResults: TaskResult[] = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) taskResults.push(JSON.parse(val) as TaskResult);
+  }
+  return c.json(taskResults);
+});
+
+// Get a specific task result by ID
+app.get('/api/task-results/:id', async (c) => {
+  const id = c.req.param('id');
+  const val = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  if (!val) {
+    return c.json({ error: 'Task result not found' }, 404);
+  }
+  return c.json(JSON.parse(val) as TaskResult);
+});
+
+// Create a new task result (for autonomous agents to report task completions)
+app.post('/api/task-results', async (c) => {
+  const body = await c.req.json();
+  
+  // Validate required fields
+  if (!body.task || !body.result) {
+    return c.json({ error: 'Missing required fields: task and result' }, 400);
+  }
+
+  const now = new Date().toISOString();
+  const id = body.id || `${Date.now()}`;
+  const taskResult: TaskResult = {
+    id,
+    task: body.task,
+    result: body.result,
+    status: body.status || 'completed',
+    agentId: body.agentId,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await c.env.AGENT_CACHE.put(`task-result:${id}`, JSON.stringify(taskResult));
+  return c.json({ success: true, id, taskResult }, 201);
+});
+
+// Update a task result
+app.put('/api/task-results/:id', async (c) => {
+  const id = c.req.param('id');
+  const existing = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  
+  if (!existing) {
+    return c.json({ error: 'Task result not found' }, 404);
+  }
+
+  const body = await c.req.json();
+  const existingData = JSON.parse(existing) as TaskResult;
+  const now = new Date().toISOString();
+  
+  const updated: TaskResult = {
+    ...existingData,
+    task: body.task ?? existingData.task,
+    result: body.result ?? existingData.result,
+    status: body.status ?? existingData.status,
+    agentId: body.agentId ?? existingData.agentId,
+    updatedAt: now,
+  };
+
+  await c.env.AGENT_CACHE.put(`task-result:${id}`, JSON.stringify(updated));
+  return c.json({ success: true, taskResult: updated });
+});
+
+// Delete a task result
+app.delete('/api/task-results/:id', async (c) => {
+  const id = c.req.param('id');
+  const existing = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  
+  if (!existing) {
+    return c.json({ error: 'Task result not found' }, 404);
+  }
+
+  await c.env.AGENT_CACHE.delete(`task-result:${id}`);
+  return c.json({ success: true, message: 'Task result deleted' });
 });
 
 export default app;
