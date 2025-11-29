@@ -147,15 +147,20 @@ app.get('/api/tasks/:id', async (c) => {
 app.post('/api/tasks', async (c) => {
   const body = await c.req.json<AgentTask>();
 
-  if (!body.task || !body.result) {
-    return c.json({ error: 'Missing required fields: task and result' }, 400);
+  // Validate required fields are present and non-empty
+  const task = body.task?.trim();
+  const result = body.result?.trim();
+
+  if (!task || !result) {
+    return c.json({ error: 'Missing required fields: task and result must be non-empty strings' }, 400);
   }
 
-  const taskId = body.id || Date.now().toString();
+  // Use crypto.randomUUID() for robust ID generation to avoid collisions
+  const taskId = body.id || crypto.randomUUID();
   const taskData: AgentTask = {
     id: taskId,
-    task: body.task,
-    result: body.result,
+    task,
+    result,
     status: body.status || 'completed',
     agentType: body.agentType || 'autonomous',
     createdAt: new Date().toISOString(),
@@ -250,10 +255,12 @@ app.get('/api/insights', (c) => {
   });
 });
 
-// Get insights by category
+// Get insights by category (uses partial matching for flexible searching)
 app.get('/api/insights/:category', (c) => {
   const category = c.req.param('category').toLowerCase();
 
+  // Filter using partial matching to allow flexible category searches
+  // e.g., "cloud" matches "Cloud Computing", "ai" matches "Artificial Intelligence"
   const filtered = technologyInsights.filter(
     (insight) => insight.category.toLowerCase().includes(category)
   );
