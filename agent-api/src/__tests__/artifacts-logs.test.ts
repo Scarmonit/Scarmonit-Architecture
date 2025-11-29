@@ -1,8 +1,8 @@
 /**
  * Tests for artifacts and logs CRUD endpoints
- * 
+ *
  * TODO: Set up KV mocking for integration tests
- * 
+ *
  * Test cases to implement:
  * - GET /api/artifacts returns empty array when no artifacts exist
  * - POST /api/artifacts creates artifact with generated ID

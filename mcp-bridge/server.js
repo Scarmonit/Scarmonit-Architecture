@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 
 import { spawn } from 'child_process'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import express from 'express'
 import cors from 'cors'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 /**
  * MCP Bridge Server
@@ -20,14 +25,16 @@ const PORT = 3001
 const MCP_SERVERS = {
   'scarmonit-architecture': {
     command: 'node',
-    args: ['C:\\Users\\scarm\\IdeaProjects\\Scarmonit-Architecture\\mcp-server\\index.js'],
+    args: [path.join(__dirname, '../mcp-server/index.js')],
     env: { LOG_LEVEL: 'INFO' }
   },
+  /*
   'llm-framework-devops': {
     command: 'node',
     args: ['C:\\Users\\scarm\\AppData\\Roaming\\JetBrains\\IntelliJIdea2025.2\\projects\\6173bf63898fe7449cbfe5b586759dcee725bc56\\src\\servers\\devops-mcp-server.js'],
     env: { LOG_LEVEL: 'INFO' }
   }
+  */
 }
 
 // Active MCP client connections

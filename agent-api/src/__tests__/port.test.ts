@@ -1,6 +1,6 @@
 /**
  * Tests for port utility functions
- * 
+ *
  * Test cases:
  * - getDefaultConfig returns correct defaults
  * - getLocalUrl constructs proper URL
@@ -33,7 +33,7 @@ export function testGetDefaultConfig(): boolean {
 export function testGetLocalUrl(): boolean {
   const url = getLocalUrl()
   assertEqual(url, 'http://localhost:8787', 'URL should be http://localhost:8787')
-  
+
   const customUrl = getLocalUrl({ port: 3000, host: '0.0.0.0' })
   assertEqual(customUrl, 'http://0.0.0.0:3000', 'Custom URL should match')
   return true

@@ -1,8 +1,8 @@
 /**
  * Tests for agent-api main entry point
- * 
+ *
  * TODO: Set up test framework (vitest or jest) to run these tests
- * 
+ *
  * Test cases to implement:
  * - GET / returns operational status
  * - GET /health returns healthy status
