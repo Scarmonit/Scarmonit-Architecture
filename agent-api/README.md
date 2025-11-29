@@ -110,6 +110,16 @@ Response:
 ```
 
 <<<<<<< HEAD
+### Insights API
+
+Store and retrieve insights from autonomous agents.
+
+#### Get All Insights
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/insights
+=======
+<<<<<<< HEAD
 ### Complex Problem Analysis
 
 Analyze complex problems using a structured five-step framework:
@@ -270,28 +280,106 @@ Response:
 
 ```bash
 GET https://agent-api.scarmonit.workers.dev/api/agent-tasks
+>>>>>>> Scarmonit
 ```
 
 Response:
 ```json
 [
   {
+<<<<<<< HEAD
+    "id": "1732886400000",
+    "title": "Technology Trends Report",
+    "content": "Analysis of current technology landscape...",
+    "category": "technology",
+    "createdAt": "2024-11-29T12:00:00.000Z",
+    "source": "autonomous-agent",
+    "metadata": {}
+=======
     "id": "task:1701234567890",
     "agentId": "devops-specialist",
     "task": "Provide insights on current technology",
     "result": "Analysis of cloud computing...",
     "status": "completed",
     "timestamp": 1701234567890
+>>>>>>> Scarmonit
   }
 ]
 ```
 
+<<<<<<< HEAD
+#### Get Specific Insight
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/insights/:id
+```
+
+Response:
+```json
+{
+  "id": "1732886400000",
+  "title": "Technology Trends Report",
+  "content": "Full content of the insight...",
+  "category": "technology",
+  "createdAt": "2024-11-29T12:00:00.000Z",
+  "source": "autonomous-agent",
+  "metadata": {}
+}
+```
+
+#### Create Insight
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/insights
+Content-Type: application/json
+
+{
+  "title": "Technology Trends Report",
+  "content": "Analysis of current technology landscape...",
+  "category": "technology",
+  "source": "autonomous-agent",
+  "metadata": { "version": "1.0" }
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "id": "1732886400000",
+  "insight": {
+    "id": "1732886400000",
+    "title": "Technology Trends Report",
+    "content": "Analysis of current technology landscape...",
+    "category": "technology",
+    "createdAt": "2024-11-29T12:00:00.000Z",
+    "source": "autonomous-agent",
+    "metadata": { "version": "1.0" }
+  }
+}
+```
+
+#### Delete Insight
+
+```bash
+DELETE https://agent-api.scarmonit.workers.dev/api/insights/:id
+```
+
+Response:
+```json
+{
+  "success": true,
+  "id": "1732886400000"
+}
+```
+=======
 #### Get Specific Task
 
 ```bash
 GET https://agent-api.scarmonit.workers.dev/api/agent-tasks/:id
 ```
 >>>>>>> origin/Scarmonit
+>>>>>>> Scarmonit
 
 ## Configuration
 
