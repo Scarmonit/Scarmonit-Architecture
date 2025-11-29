@@ -1,0 +1,45 @@
+{
+  "name": "scarmonit-architecture",
+  "version": "2.5.0",
+  "description": "Unified AI Infrastructure Architecture - Autonomous agents, edge computing, and premium UI",
+  "private": true,
+  "workspaces": [
+    "web-portal",
+    "agent-api",
+    "desktop-app"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --prefix agent-api && npm install --prefix desktop-app",
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\" \"npm run dev:desktop\"",
+    "dev:web": "cd web-portal && python -m http.server 8080",
+    "dev:api": "cd agent-api && wrangler dev",
+    "dev:desktop": "cd desktop-app && npm start",
+    "deploy:all": "npm run deploy:web && npm run deploy:api",
+    "deploy:web": "cd web-portal && wrangler pages deploy . --project-name=scarmonit-www",
+    "deploy:api": "cd agent-api && wrangler deploy --env production",
+    "test": "echo \"Tests coming soon\"",
+    "lint": "echo \"Linting coming soon\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Scarmonit/Scarmonit-Architecture.git"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "cloudflare",
+    "llm",
+    "infrastructure",
+    "automation",
+    "edge-computing"
+  ],
+  "author": "Scarmonit <scarmonit@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@scarmonit/agent-api",
+  "version": "2.5.0",
+  "description": "Cloudflare Worker API for Scarmonit Agent Dashboard",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --env production",
+    "deploy:staging": "wrangler deploy",
+    "tail": "wrangler tail",
+    "test": "echo \"Tests coming soon\""
+  },
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "ai",
+    "agent",
+    "api"
+  ],
+  "author": "Scarmonit <scarmonit@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "wrangler": "^3.0.0"
+  }
+}
