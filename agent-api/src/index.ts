@@ -109,4 +109,89 @@ app.get('/api/logs', async (c) => {
   return c.json(logs);
 });
 
+// --- INSIGHTS ENDPOINTS ---
+
+// Define the Insight type for better type safety
+interface Insight {
+  id: string;
+  title: string;
+  content: string;
+  category?: string;
+  createdAt: string;
+  source?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// Get all insights
+app.get('/api/insights', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'insight:' });
+  const insights: Insight[] = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) {
+      try {
+        insights.push(JSON.parse(val) as Insight);
+      } catch {
+        // Skip malformed entries
+      }
+    }
+  }
+  return c.json(insights);
+});
+
+// Get a specific insight by ID
+app.get('/api/insights/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('insight:') ? id : `insight:${id}`;
+  const val = await c.env.AGENT_CACHE.get(key);
+  if (!val) {
+    return c.json({ error: 'Insight not found' }, 404);
+  }
+  try {
+    return c.json(JSON.parse(val) as Insight);
+  } catch {
+    return c.json({ error: 'Failed to parse insight data' }, 500);
+  }
+});
+
+// Create a new insight
+app.post('/api/insights', async (c) => {
+  const body = await c.req.json();
+  
+  // Validate required fields
+  if (!body.title || !body.content) {
+    return c.json({ error: 'Missing required fields: title and content are required' }, 400);
+  }
+  
+  const id = body.id || `${Date.now()}`;
+  const insight: Insight = {
+    id,
+    title: body.title,
+    content: body.content,
+    category: body.category || 'general',
+    createdAt: new Date().toISOString(),
+    source: body.source || 'autonomous-agent',
+    metadata: body.metadata || {},
+  };
+  
+  const key = `insight:${id}`;
+  await c.env.AGENT_CACHE.put(key, JSON.stringify(insight));
+  return c.json({ success: true, id, insight });
+});
+
+// Delete an insight by ID
+app.delete('/api/insights/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('insight:') ? id : `insight:${id}`;
+  
+  // Check if insight exists first
+  const existing = await c.env.AGENT_CACHE.get(key);
+  if (!existing) {
+    return c.json({ error: 'Insight not found' }, 404);
+  }
+  
+  await c.env.AGENT_CACHE.delete(key);
+  return c.json({ success: true, id });
+});
+
 export default app;

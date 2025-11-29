@@ -109,6 +109,96 @@ Response:
 }
 ```
 
+### Insights API
+
+Store and retrieve insights from autonomous agents.
+
+#### Get All Insights
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/insights
+```
+
+Response:
+```json
+[
+  {
+    "id": "1732886400000",
+    "title": "Technology Trends Report",
+    "content": "Analysis of current technology landscape...",
+    "category": "technology",
+    "createdAt": "2024-11-29T12:00:00.000Z",
+    "source": "autonomous-agent",
+    "metadata": {}
+  }
+]
+```
+
+#### Get Specific Insight
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/insights/:id
+```
+
+Response:
+```json
+{
+  "id": "1732886400000",
+  "title": "Technology Trends Report",
+  "content": "Full content of the insight...",
+  "category": "technology",
+  "createdAt": "2024-11-29T12:00:00.000Z",
+  "source": "autonomous-agent",
+  "metadata": {}
+}
+```
+
+#### Create Insight
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/insights
+Content-Type: application/json
+
+{
+  "title": "Technology Trends Report",
+  "content": "Analysis of current technology landscape...",
+  "category": "technology",
+  "source": "autonomous-agent",
+  "metadata": { "version": "1.0" }
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "id": "1732886400000",
+  "insight": {
+    "id": "1732886400000",
+    "title": "Technology Trends Report",
+    "content": "Analysis of current technology landscape...",
+    "category": "technology",
+    "createdAt": "2024-11-29T12:00:00.000Z",
+    "source": "autonomous-agent",
+    "metadata": { "version": "1.0" }
+  }
+}
+```
+
+#### Delete Insight
+
+```bash
+DELETE https://agent-api.scarmonit.workers.dev/api/insights/:id
+```
+
+Response:
+```json
+{
+  "success": true,
+  "id": "1732886400000"
+}
+```
+
 ## Configuration
 
 ### Environment Variables
