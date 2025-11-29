@@ -152,13 +152,13 @@ app.get('/api/task-results/:id', async (c) => {
 app.post('/api/task-results', async (c) => {
   const body = await c.req.json();
   
-  // Validate required fields
-  if (!body.task || !body.result) {
+  // Validate required fields (check for non-empty strings)
+  if (!body.task?.trim() || !body.result?.trim()) {
     return c.json({ error: 'Missing required fields: task and result' }, 400);
   }
 
   const now = new Date().toISOString();
-  const id = body.id || `${Date.now()}`;
+  const id = body.id || crypto.randomUUID();
   const taskResult: TaskResult = {
     id,
     task: body.task,
