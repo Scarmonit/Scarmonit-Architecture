@@ -369,11 +369,11 @@ app.post('/api/chat', async (c) => {
   let body: any; 
   try { 
     body = await c.req.json(); 
-  } catch { 
+  } catch {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
-  } 
+  }
 
   const parsed = chatSchema.safeParse(body);
   if (!parsed.success) {
@@ -435,11 +435,11 @@ app.post('/api/analyze', async (c) => {
   let body: any; 
   try { 
     body = await c.req.json(); 
-  } catch { 
+  } catch {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
-  } 
+  }
 
   const parsed = analyzeSchema.safeParse(body);
   if (!parsed.success) {
@@ -826,7 +826,11 @@ app.get('/api/task-results', async (c) => {
 // Get a specific task result by ID
 app.get('/api/task-results/:id', async (c) => {
   const id = c.req.param('id');
-  const val = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  const key = getInsightKey(id); // Reusing helper for consistent ID handling
+  // Correct key prefix check for task results
+  const taskKey = id.startsWith('task-result:') ? id : `task-result:${id}`;
+  
+  const val = await c.env.AGENT_CACHE.get(taskKey);
   if (!val) {
     return c.json({ error: 'Task result not found' }, 404);
   }
@@ -861,7 +865,8 @@ app.post('/api/task-results', async (c) => {
 // Update a task result
 app.put('/api/task-results/:id', async (c) => {
   const id = c.req.param('id');
-  const existing = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  const taskKey = id.startsWith('task-result:') ? id : `task-result:${id}`;
+  const existing = await c.env.AGENT_CACHE.get(taskKey);
   
   if (!existing) {
     return c.json({ error: 'Task result not found' }, 404);
@@ -880,20 +885,21 @@ app.put('/api/task-results/:id', async (c) => {
     updatedAt: now,
   };
 
-  await c.env.AGENT_CACHE.put(`task-result:${id}`, JSON.stringify(updated));
+  await c.env.AGENT_CACHE.put(taskKey, JSON.stringify(updated));
   return c.json({ success: true, taskResult: updated });
 });
 
 // Delete a task result
 app.delete('/api/task-results/:id', async (c) => {
   const id = c.req.param('id');
-  const existing = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  const taskKey = id.startsWith('task-result:') ? id : `task-result:${id}`;
+  const existing = await c.env.AGENT_CACHE.get(taskKey);
   
   if (!existing) {
     return c.json({ error: 'Task result not found' }, 404);
   }
 
-  await c.env.AGENT_CACHE.delete(`task-result:${id}`);
+  await c.env.AGENT_CACHE.delete(taskKey);
   return c.json({ success: true, message: 'Task result deleted' });
 });
 
@@ -1200,7 +1206,7 @@ app.delete('/api/insights/:id', async (c) => {
 app.get('/api/trends/summary/latest', async (c) => {
   const list = await c.env.AGENT_CACHE.list({ prefix: 'trend:' });
   if (list.keys.length === 0) {
-    return c.json({ 
+    return c.json({
       message: 'No trend reports available',
       summary: null 
     });
