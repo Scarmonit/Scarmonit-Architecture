@@ -132,6 +132,25 @@ interface TaskResponse {
   timestamp: string;
 }
 
+// Helper function to ensure consistent task key formatting
+function formatTaskKey(taskId: string): string {
+  return taskId.startsWith('task:') ? taskId : `task:${taskId}`;
+}
+
+// Helper function to determine task status based on clarification data
+function determineTaskStatus(
+  clarificationData: Partial<TaskRequest>
+): TaskResponse['status'] {
+  // Task moves to 'in_progress' when essential context is provided
+  const hasEssentialContext = Boolean(
+    clarificationData.domain ||
+    (clarificationData.stakeholders && clarificationData.stakeholders.length > 0) ||
+    (clarificationData.dataTypes && clarificationData.dataTypes.length > 0)
+  );
+  
+  return hasEssentialContext ? 'in_progress' : 'needs_clarification';
+}
+
 // 3. Submit task to autonomous agent with context
 app.post('/api/tasks', async (c) => {
   const body = await c.req.json() as TaskRequest;
@@ -141,7 +160,7 @@ app.post('/api/tasks', async (c) => {
     return c.json({ error: 'Task description is required' }, 400);
   }
 
-  const taskId = body.taskId || `task:${Date.now()}`;
+  const taskId = formatTaskKey(body.taskId || `${Date.now()}`);
   const task: TaskResponse = {
     taskId,
     status: 'pending',
@@ -165,15 +184,11 @@ app.post('/api/tasks', async (c) => {
 // 4. Get task status
 app.get('/api/tasks/:taskId', async (c) => {
   const taskId = c.req.param('taskId');
-  const val = await c.env.AGENT_CACHE.get(`task:${taskId}`);
+  const key = formatTaskKey(taskId);
+  const val = await c.env.AGENT_CACHE.get(key);
   
   if (!val) {
-    // Try without prefix
-    const valAlt = await c.env.AGENT_CACHE.get(taskId);
-    if (!valAlt) {
-      return c.json({ error: 'Task not found' }, 404);
-    }
-    return c.json(JSON.parse(valAlt));
+    return c.json({ error: 'Task not found' }, 404);
   }
   
   return c.json(JSON.parse(val));
@@ -245,7 +260,7 @@ Provide a comprehensive JSON response with:
     });
 
     // Store the analysis result as a task
-    const taskId = body.taskId || `task:${Date.now()}`;
+    const taskId = formatTaskKey(body.taskId || `${Date.now()}`);
     await c.env.AGENT_CACHE.put(taskId, JSON.stringify({
       ...body,
       taskId,
@@ -268,13 +283,11 @@ Provide a comprehensive JSON response with:
 // 7. Agent request for clarification (handles the autonomous agent feedback loop)
 app.post('/api/tasks/:taskId/clarify', async (c) => {
   const taskId = c.req.param('taskId');
-  const body = await c.req.json();
+  const key = formatTaskKey(taskId);
+  const body = await c.req.json() as Partial<TaskRequest>;
   
   // Get existing task
-  let existingTask = await c.env.AGENT_CACHE.get(`task:${taskId}`);
-  if (!existingTask) {
-    existingTask = await c.env.AGENT_CACHE.get(taskId);
-  }
+  const existingTask = await c.env.AGENT_CACHE.get(key);
   
   if (!existingTask) {
     return c.json({ error: 'Task not found' }, 404);
@@ -282,17 +295,15 @@ app.post('/api/tasks/:taskId/clarify', async (c) => {
 
   const task = JSON.parse(existingTask);
   
-  // Update task with clarification response
+  // Update task with clarification response using helper for status determination
   const updatedTask = {
     ...task,
     ...body,
-    status: body.domain || body.stakeholders || body.dataTypes 
-      ? 'in_progress' 
-      : 'needs_clarification',
+    status: determineTaskStatus(body),
     lastUpdated: new Date().toISOString(),
   };
 
-  await c.env.AGENT_CACHE.put(taskId.startsWith('task:') ? taskId : `task:${taskId}`, JSON.stringify(updatedTask));
+  await c.env.AGENT_CACHE.put(key, JSON.stringify(updatedTask));
 
   return c.json({
     success: true,
