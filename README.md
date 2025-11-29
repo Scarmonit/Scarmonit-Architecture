@@ -259,33 +259,13 @@ If you're experiencing activation problems with JetBrains IDEs (IntelliJ, WebSto
 - WeChat: gejun12311
 - QQ Group: 575733084
 
-### MCP Agent Personas Issues
-If agent personas aren't loading in Copilot Chat:
+### MCP Server Issues
+If the MCP server is not working properly:
 
-**Run Diagnostic:**
-```powershell
-.\diagnose-copilot-mcp.ps1
-```
+**Documentation:**
+- [mcp-server/README.md](mcp-server/README.md) - MCP server setup and usage
 
-**Use MCP Tools Directly:**
-```powershell
-.\use-mcp-tools.ps1
-```
-
-**📖 Complete Guides:**
-- [COMPLETE_STATUS.md](COMPLETE_STATUS.md) - Current status & what's actually working
-- [COPILOT_TROUBLESHOOTING.md](COPILOT_TROUBLESHOOTING.md) - Detailed troubleshooting
-- [REALITY_CHECK.md](REALITY_CHECK.md) - What you can actually do right now
-- [MCP_COPILOT_INTEGRATION_COMPLETE.md](MCP_COPILOT_INTEGRATION_COMPLETE.md) - Original setup guide
-
-**🎯 Quick Check:**
-```
-Settings → Tools → GitHub Copilot
-Look for "Agent Mode" toggle
-```
-
-If you don't see it:
-- Check WebStorm version (need 2024.3+)
-- Update Copilot plugin (need 1.5.0+)
-- Install MCP plugin from Marketplace
-- Invalidate caches and restart
+**Quick Check:**
+- Ensure Node.js 18+ is installed
+- Run npm install in the mcp-server directory
+- Start with npm run dev:mcp from project root
