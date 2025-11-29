@@ -7,16 +7,16 @@
     "start": "wrangler dev"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20251128.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.14",
-    "wrangler": "^3.114.15"
+    "@cloudflare/workers-types": "^4.20240502.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "wrangler": "^3.53.0"
   },
   "main": "src/index.ts",
   "dependencies": {
     "@cloudflare/ai": "^1.2.2",
     "base64-js": "^1.5.1",
-    "hono": "^4.10.7",
+    "hono": "^4.3.0",
     "mustache": "^4.2.0"
   }
 }
