@@ -88,6 +88,30 @@ npm run dev
 
 **Tech Stack:** Electron, React, Node.js
 
+### 4. MCP Server & Integrations (`mcp-server/`)
+
+**Status:** Active | **Datalore Integration:** ✅ Connected
+
+Model Context Protocol (MCP) server providing AI tools and integrations:
+
+#### Features:
+- **Infrastructure Monitoring**: Real-time health checks for web and API components
+- **Documentation Query**: Intelligent search across architecture docs
+- **Datalore Cloud Integration**: Full connectivity for data science notebooks
+
+#### Datalore Cloud Setup:
+```bash
+# From project root:
+npm run dev:mcp
+```
+
+#### Available MCP Tools:
+1. `check_system_status` - Monitor infrastructure health
+2. `query_docs` - Search documentation
+3. `check_datalore_status` - Verify Datalore integration
+
+**Tech Stack:** Node.js, TypeScript, MCP SDK, Datalore Cloud API
+
 ## 🔧 Development
 
 ### Working with AI CLI Tools
