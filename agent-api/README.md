@@ -109,6 +109,146 @@ Response:
 }
 ```
 
+### Innovative Solutions API
+
+These endpoints implement the innovative solutions proposed by the autonomous agent for system integration.
+
+#### List Solutions
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/solutions
+GET https://agent-api.scarmonit.workers.dev/api/solutions?category=ai_integration
+GET https://agent-api.scarmonit.workers.dev/api/solutions?status=proposed&priority=high
+```
+
+Response:
+```json
+{
+  "total": 10,
+  "solutions": [
+    {
+      "id": "sol-001",
+      "name": "API Gateway Optimization",
+      "category": "api_gateway",
+      "description": "Smart API gateway using ML algorithms...",
+      "status": "proposed",
+      "priority": "high",
+      "benefits": ["Reduced latency", "Improved performance"],
+      "createdAt": "2025-11-29T00:00:00.000Z",
+      "updatedAt": "2025-11-29T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### Get Solution Details
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/solutions/:id
+```
+
+#### Create Custom Solution
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/solutions
+Content-Type: application/json
+
+{
+  "name": "Custom Integration",
+  "category": "ai_integration",
+  "description": "Description of the solution",
+  "status": "proposed",
+  "priority": "medium",
+  "benefits": ["Benefit 1", "Benefit 2"]
+}
+```
+
+#### Update Solution Status
+
+```bash
+PATCH https://agent-api.scarmonit.workers.dev/api/solutions/:id
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+```
+
+### Event-Driven Architecture API
+
+These endpoints support event-driven communication between systems.
+
+#### Publish Event
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/events
+Content-Type: application/json
+
+{
+  "type": "integration.updated",
+  "source": "agent-service",
+  "data": { "solutionId": "sol-001", "action": "status_change" }
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "event": {
+    "id": "evt-1234567890",
+    "type": "integration.updated",
+    "source": "agent-service",
+    "data": { ... },
+    "timestamp": "2025-11-29T00:00:00.000Z",
+    "processed": false
+  }
+}
+```
+
+#### List Events
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/events
+GET https://agent-api.scarmonit.workers.dev/api/events?type=integration.updated&limit=20
+```
+
+### Integration Status
+
+Real-time integration status and metrics.
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/integration-status
+```
+
+Response:
+```json
+{
+  "status": "operational",
+  "timestamp": "2025-11-29T00:00:00.000Z",
+  "metrics": {
+    "totalSolutions": 10,
+    "implemented": 0,
+    "inProgress": 1,
+    "proposed": 9,
+    "implementationRate": 0
+  },
+  "categories": {
+    "api_gateway": 1,
+    "data_streaming": 1,
+    "ai_integration": 1,
+    ...
+  },
+  "activeCapabilities": [
+    "AI Chat",
+    "Artifact Analysis",
+    "Agent Management",
+    "Event Publishing",
+    "Solution Tracking"
+  ]
+}
+```
+
 ## Configuration
 
 ### Environment Variables
