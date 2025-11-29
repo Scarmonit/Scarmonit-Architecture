@@ -2,6 +2,12 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { Ai } from '@cloudflare/ai';
 
+// Configuration constants
+const TASK_CACHE_TTL_SECONDS = 86400; // 24 hours
+const MAX_LIST_ITEMS = 10;
+const MAX_LINE_LENGTH = 500;
+const RESPONSE_SECTIONS = ['ANALYSIS', 'RECOMMENDATIONS', 'NEXT STEPS'] as const;
+
 // Define bindings
 type Bindings = {
   AGENT_CACHE: KVNamespace;
@@ -144,16 +150,17 @@ Please analyze this problem and provide your analysis, recommendations, and sugg
 
     // Parse recommendations and next steps from the response
     const extractListItems = (text: string, section: string): string[] => {
-      const sectionRegex = new RegExp(`${section}[:\\s]*([\\s\\S]*?)(?=(?:ANALYSIS|RECOMMENDATIONS|NEXT STEPS)[:\\s]|$)`, 'i');
+      const sectionPattern = RESPONSE_SECTIONS.join('|');
+      const sectionRegex = new RegExp(`${section}[:\\s]*([\\s\\S]*?)(?=(?:${sectionPattern})[:\\s]|$)`, 'i');
       const match = text.match(sectionRegex);
       if (!match) return [];
       
       const items = match[1]
         .split('\n')
         .map(line => line.replace(/^[-•*]\s*/, '').trim())
-        .filter(line => line.length > 0 && line.length < 500);
+        .filter(line => line.length > 0 && line.length < MAX_LINE_LENGTH);
       
-      return items.slice(0, 10); // Limit to 10 items
+      return items.slice(0, MAX_LIST_ITEMS);
     };
 
     // Store the task result in KV cache
@@ -170,7 +177,7 @@ Please analyze this problem and provide your analysis, recommendations, and sugg
     };
 
     await c.env.AGENT_CACHE.put(`task:${taskId}`, JSON.stringify(taskResult), {
-      expirationTtl: 86400 // 24 hours
+      expirationTtl: TASK_CACHE_TTL_SECONDS
     });
 
     return c.json(taskResult);
