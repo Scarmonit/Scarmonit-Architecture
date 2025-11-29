@@ -122,6 +122,11 @@ interface Insight {
   metadata?: Record<string, unknown>;
 }
 
+// Helper function to construct insight key from ID
+function getInsightKey(id: string): string {
+  return id.startsWith('insight:') ? id : `insight:${id}`;
+}
+
 // Get all insights
 app.get('/api/insights', async (c) => {
   const list = await c.env.AGENT_CACHE.list({ prefix: 'insight:' });
@@ -142,7 +147,7 @@ app.get('/api/insights', async (c) => {
 // Get a specific insight by ID
 app.get('/api/insights/:id', async (c) => {
   const id = c.req.param('id');
-  const key = id.startsWith('insight:') ? id : `insight:${id}`;
+  const key = getInsightKey(id);
   const val = await c.env.AGENT_CACHE.get(key);
   if (!val) {
     return c.json({ error: 'Insight not found' }, 404);
@@ -163,7 +168,26 @@ app.post('/api/insights', async (c) => {
     return c.json({ error: 'Missing required fields: title and content are required' }, 400);
   }
   
-  const id = body.id || `${Date.now()}`;
+  // Validate required fields are strings
+  if (typeof body.title !== 'string' || typeof body.content !== 'string') {
+    return c.json({ error: 'Invalid field types: title and content must be strings' }, 400);
+  }
+  
+  // Validate optional fields if provided
+  if (body.category !== undefined && typeof body.category !== 'string') {
+    return c.json({ error: 'Invalid field type: category must be a string' }, 400);
+  }
+  
+  if (body.source !== undefined && typeof body.source !== 'string') {
+    return c.json({ error: 'Invalid field type: source must be a string' }, 400);
+  }
+  
+  if (body.metadata !== undefined && (typeof body.metadata !== 'object' || body.metadata === null || Array.isArray(body.metadata))) {
+    return c.json({ error: 'Invalid field type: metadata must be an object' }, 400);
+  }
+  
+  // Generate unique ID using crypto.randomUUID() for collision-resistant IDs
+  const id = body.id || crypto.randomUUID();
   const insight: Insight = {
     id,
     title: body.title,
@@ -174,7 +198,7 @@ app.post('/api/insights', async (c) => {
     metadata: body.metadata || {},
   };
   
-  const key = `insight:${id}`;
+  const key = getInsightKey(id);
   await c.env.AGENT_CACHE.put(key, JSON.stringify(insight));
   return c.json({ success: true, id, insight });
 });
@@ -182,7 +206,7 @@ app.post('/api/insights', async (c) => {
 // Delete an insight by ID
 app.delete('/api/insights/:id', async (c) => {
   const id = c.req.param('id');
-  const key = id.startsWith('insight:') ? id : `insight:${id}`;
+  const key = getInsightKey(id);
   
   // Check if insight exists first
   const existing = await c.env.AGENT_CACHE.get(key);
