@@ -103,7 +103,7 @@ app.post('/api/agent/task', async (c) => {
     }, 400);
   }
 
-  const taskId = `task_${Date.now()}`;
+  const taskId = `task_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   const validDataTypes = ['text', 'numbers', 'images', 'mixed'];
   const dataType = body.dataType && validDataTypes.includes(body.dataType) 
     ? body.dataType 
