@@ -34,6 +34,8 @@ type Bindings = {
   AI: Ai;
 };
 
+// --- TYPES ---
+
 // Agent task types
 type TaskStatus = 'pending' | 'completed' | 'failed';
 
@@ -47,6 +49,36 @@ interface AgentTask {
   metadata?: Record<string, unknown>;
 }
 
+// Types for operational efficiency (from PR #881)
+interface EfficiencyMetrics {
+  processingTime: {
+    average: number;
+    count: number;
+    lastUpdated: string;
+  };
+  cacheStats: {
+    hits: number;
+    misses: number;
+    hitRate: number;
+  };
+  errorRate: {
+    total: number;
+    errors: number;
+    rate: number;
+  };
+}
+
+interface CacheEntry {
+  response: unknown;
+  timestamp: number;
+  ttl: number;
+}
+
+// --- CONSTANTS ---
+
+// Default cache TTL (5 minutes)
+const CACHE_TTL = 5 * 60 * 1000;
+
 const app = new Hono<{ Bindings: Bindings }>();
 
 // Middleware
@@ -54,7 +86,6 @@ app.use('*', cors());
 
 // Inject Mock if missing
 app.use('*', async (c, next) => {
-  // Ensure env object exists (Hono sets c.env only when provided; tests may omit)
   if (!c.env) { (c as any).env = {} as any; }
   if (!c.env.AGENT_CACHE) {
     logger.warn('Running in Local Mode: Using Mock KV');
@@ -77,13 +108,11 @@ async function getRecentContext(env: Bindings) {
 
   let context = "Current System Context:\n";
 
-  // Fetch artifacts
   for (const key of artifacts) {
     const val = await env.AGENT_CACHE.get(key.name);
     if (val) context += `- Artifact: ${val}\n`;
   }
 
-  // Fetch agents
   for (const key of agents) {
     const val = await env.AGENT_CACHE.get(key.name);
     if (val) context += `- Agent Status: ${val}\n`;
@@ -92,47 +121,314 @@ async function getRecentContext(env: Bindings) {
   return context;
 }
 
+// Generate cache key from request using FNV-1a hash for better distribution
+function generateCacheKey(prefix: string, data: unknown): string {
+  const str = JSON.stringify(data);
+  let hash = 2166136261; // FNV offset basis
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 16777619); // FNV prime
+  }
+  return `${prefix}:${(hash >>> 0).toString(16)}`;
+}
+
+// Extract error message safely
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+// Helper to update metrics
+async function updateMetrics(
+  cache: KVNamespace,
+  processingTime: number,
+  isError: boolean,
+  isCacheHit: boolean
+): Promise<void> {
+  const metricsData = await cache.get('metrics:efficiency');
+  const metrics: EfficiencyMetrics = metricsData
+    ? JSON.parse(metricsData)
+    : {
+        processingTime: { average: 0, count: 0, lastUpdated: new Date().toISOString() },
+        cacheStats: { hits: 0, misses: 0, hitRate: 0 },
+        errorRate: { total: 0, errors: 0, rate: 0 },
+      };
+
+  // Update processing time
+  const newCount = metrics.processingTime.count + 1;
+  metrics.processingTime.average =
+    (metrics.processingTime.average * metrics.processingTime.count + processingTime) / newCount;
+  metrics.processingTime.count = newCount;
+  metrics.processingTime.lastUpdated = new Date().toISOString();
+
+  // Update cache stats
+  if (isCacheHit) {
+    metrics.cacheStats.hits++;
+  } else {
+    metrics.cacheStats.misses++;
+  }
+  const totalCacheRequests = metrics.cacheStats.hits + metrics.cacheStats.misses;
+  metrics.cacheStats.hitRate = totalCacheRequests > 0
+    ? metrics.cacheStats.hits / totalCacheRequests
+    : 0;
+
+  // Update error rate
+  metrics.errorRate.total++;
+  if (isError) {
+    metrics.errorRate.errors++;
+  }
+  metrics.errorRate.rate = metrics.errorRate.total > 0
+    ? metrics.errorRate.errors / metrics.errorRate.total
+    : 0;
+
+  await cache.put('metrics:efficiency', JSON.stringify(metrics));
+}
+
+// Generate recommendations based on metrics
+function generateRecommendations(metrics: EfficiencyMetrics): string[] {
+  const recommendations: string[] = [];
+
+  if (metrics.processingTime.average >= 1000) {
+    recommendations.push('Optimize NLP algorithms to reduce processing time');
+    recommendations.push('Implement additional caching for frequently accessed data');
+  }
+
+  if (metrics.errorRate.rate >= 0.05) {
+    recommendations.push('Update knowledge base with latest patterns');
+    recommendations.push('Implement peer-review mechanism for validation');
+  }
+
+  if (metrics.cacheStats.hitRate <= 0.5) {
+    recommendations.push('Review cache key generation strategy');
+    recommendations.push('Consider increasing cache TTL for stable data');
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push('System is operating efficiently');
+  }
+
+  return recommendations;
+}
+
+// Generate action plan based on metrics
+function generateActionPlan(metrics: EfficiencyMetrics): string[] {
+  const plan: string[] = [];
+
+  if (metrics.processingTime.average >= 500) {
+    plan.push('1. Enable response caching for repeated queries');
+  }
+
+  if (metrics.errorRate.rate > 0) {
+    plan.push('2. Review and improve input validation');
+  }
+
+  plan.push('3. Continue monitoring operational metrics');
+  plan.push('4. Schedule periodic efficiency reviews');
+
+  return plan;
+}
+
 // --- AI AGENT ENDPOINTS ---
 
-// 1. Chat with the Agent (Enhanced with RAG)
+// 1. Chat with the Agent (Enhanced with RAG + Caching)
 app.post('/api/chat', async (c) => {
+  const startTime = Date.now();
+  let isCacheHit = false;
+  let isError = false;
+
   let body: any;
-  try { body = await c.req.json(); } catch { return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); }
+  try { 
+    body = await c.req.json(); 
+  } catch { 
+    isError = true;
+    await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
+    return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
+  }
+
   const parsed = chatSchema.safeParse(body);
-  if (!parsed.success) return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400);
+  if (!parsed.success) {
+    isError = true;
+    await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
+    return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400);
+  }
+
   try {
+    const messages = Array.isArray(parsed.data.messages) ? parsed.data.messages : [{ role: 'user', content: parsed.data.prompt || 'Hello' }];
+
+    // Check cache
+    const cacheKey = generateCacheKey('chat', messages);
+    const cachedData = await c.env.AGENT_CACHE.get(cacheKey);
+
+    if (cachedData) {
+      const cached: CacheEntry = JSON.parse(cachedData);
+      if (Date.now() - cached.timestamp < cached.ttl) {
+        isCacheHit = true;
+        await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
+        const cachedResponse = typeof cached.response === 'object' && cached.response !== null
+          ? { ...cached.response, cached: true }
+          : { response: cached.response, cached: true };
+        return c.json(cachedResponse);
+      }
+    }
+
     const ai = new Ai(c.env.AI);
-    let messages = Array.isArray(parsed.data.messages) ? parsed.data.messages : [{ role: 'user', content: parsed.data.prompt || 'Hello' }];
     const systemContext = await getRecentContext(c.env);
     const systemPrompt = { role: 'system', content: `You are Scarmonit, an advanced autonomous system administrator.\n${systemContext}\nYour goal is to maintain system health.` };
-    messages = [systemPrompt, ...messages];
-    const response = await ai.run(AI_MODEL, { messages });
+    const finalMessages = [systemPrompt, ...messages];
+    
+    const response = await ai.run(AI_MODEL, { messages: finalMessages });
+
+    // Cache the response
+    const cacheEntry: CacheEntry = {
+      response,
+      timestamp: Date.now(),
+      ttl: CACHE_TTL,
+    };
+    await c.env.AGENT_CACHE.put(cacheKey, JSON.stringify(cacheEntry));
+
+    await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json(response);
   } catch (e: any) {
+    isError = true;
+    await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     logger.error('Chat generation failure', { message: e?.message });
     return c.json({ error: ERROR_MESSAGES.AI_GENERATION_FAILED, details: e?.message }, 500);
   }
 });
 
-// 2. Analyze Artifacts (The "Better" Agent part)
+// 2. Analyze Artifacts (With Caching)
 app.post('/api/analyze', async (c) => {
+  const startTime = Date.now();
+  let isCacheHit = false;
+  let isError = false;
+
   let body: any;
-  try { body = await c.req.json(); } catch { return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); }
+  try { 
+    body = await c.req.json(); 
+  } catch { 
+    isError = true;
+    await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
+    return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
+  }
+
   const parsed = analyzeSchema.safeParse(body);
-  if (!parsed.success) return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400);
+  if (!parsed.success) {
+    isError = true;
+    await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
+    return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400);
+  }
+
   const { data, type } = parsed.data;
+
+  // Check cache
+  const cacheKey = generateCacheKey('analyze', { data, type });
+  const cachedData = await c.env.AGENT_CACHE.get(cacheKey);
+
+  if (cachedData) {
+    const cached: CacheEntry = JSON.parse(cachedData);
+    if (Date.now() - cached.timestamp < cached.ttl) {
+      isCacheHit = true;
+      await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
+      const cachedResponse = typeof cached.response === 'object' && cached.response !== null
+        ? { ...cached.response, cached: true }
+        : { response: cached.response, cached: true };
+      return c.json(cachedResponse);
+    }
+  }
+
   const prompt = `Analyze ${type}: ${JSON.stringify(data)}`;
   try {
     const ai = new Ai(c.env.AI);
     const response = await ai.run(AI_MODEL, { messages: [{ role: 'user', content: prompt }] });
+
+    // Cache the response
+    const cacheEntry: CacheEntry = {
+      response,
+      timestamp: Date.now(),
+      ttl: CACHE_TTL,
+    };
+    await c.env.AGENT_CACHE.put(cacheKey, JSON.stringify(cacheEntry));
+
+    await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json(response);
   } catch (e: any) {
+    isError = true;
+    await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     logger.error('Analysis failure', { message: e?.message });
     return c.json({ error: ERROR_MESSAGES.ANALYSIS_FAILED, details: e?.message }, 500);
   }
 });
 
-// --- CRUD ENDPOINTS (Ported) ---
+// --- OPERATIONAL EFFICIENCY ENDPOINTS (From PR #881) ---
+
+// Get operational metrics
+app.get('/api/metrics', async (c) => {
+  const metricsData = await c.env.AGENT_CACHE.get('metrics:efficiency');
+  const metrics: EfficiencyMetrics = metricsData
+    ? JSON.parse(metricsData)
+    : {
+        processingTime: { average: 0, count: 0, lastUpdated: new Date().toISOString() },
+        cacheStats: { hits: 0, misses: 0, hitRate: 0 },
+        errorRate: { total: 0, errors: 0, rate: 0 },
+      };
+
+  return c.json({
+    status: 'operational',
+    metrics,
+    recommendations: generateRecommendations(metrics),
+  });
+});
+
+// Self-improvement analysis endpoint
+app.get('/api/agent/analyze-efficiency', async (c) => {
+  const metricsData = await c.env.AGENT_CACHE.get('metrics:efficiency');
+  const metrics: EfficiencyMetrics = metricsData
+    ? JSON.parse(metricsData)
+    : {
+        processingTime: { average: 0, count: 0, lastUpdated: new Date().toISOString() },
+        cacheStats: { hits: 0, misses: 0, hitRate: 0 },
+        errorRate: { total: 0, errors: 0, rate: 0 },
+      };
+
+  const analysis = {
+    timestamp: new Date().toISOString(),
+    areas: {
+      processingTime: {
+        status: metrics.processingTime.average < 1000 ? 'optimal' : 'needs_improvement',
+        currentValue: `${metrics.processingTime.average}ms`,
+        suggestion: metrics.processingTime.average >= 1000
+          ? 'Consider implementing additional caching layers'
+          : 'Processing time is within acceptable range',
+      },
+      accuracy: {
+        status: metrics.errorRate.rate < 0.05 ? 'optimal' : 'needs_improvement',
+        currentValue: `${(1 - metrics.errorRate.rate) * 100}%`,
+        suggestion: metrics.errorRate.rate >= 0.05
+          ? 'Review error patterns and improve input validation'
+          : 'Error rate is within acceptable range',
+      },
+      coverage: {
+        status: 'monitoring',
+        currentValue: `${metrics.processingTime.count} requests processed`,
+        suggestion: 'Continue monitoring request patterns',
+      },
+      resourceUtilization: {
+        status: metrics.cacheStats.hitRate > 0.5 ? 'optimal' : 'needs_improvement',
+        currentValue: `${(metrics.cacheStats.hitRate * 100).toFixed(1)}% cache hit rate`,
+        suggestion: metrics.cacheStats.hitRate <= 0.5
+          ? 'Increase cache utilization for frequently accessed data'
+          : 'Cache utilization is efficient',
+      },
+    },
+    actionPlan: generateActionPlan(metrics),
+  };
+
+  return c.json(analysis);
+});
+
+// --- CRUD ENDPOINTS ---
 
 app.get('/', (c) => c.json({ status: 'operational', agent: 'active', framework: 'Hono', mode: c.env.AGENT_CACHE instanceof MockKV ? 'local' : 'edge' }));
 app.get('/health', (c) => c.json({ status: 'healthy' }));
@@ -190,7 +486,7 @@ app.get('/api/logs', async (c) => {
   return c.json(logs);
 });
 
-// --- AGENT TASK ENDPOINTS ---
+// --- AGENT TASK ENDPOINTS (from PR #886) ---
 
 // Submit a completed agent task
 app.post('/api/agent-tasks', async (c) => {
