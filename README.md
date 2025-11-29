@@ -31,9 +31,9 @@ Scarmonit-Architecture/
 │   └── api.md           # API documentation
 │
 └── scripts/             # Automation and deployment scripts
-    ├── deploy-all.sh    # Deploy all components
-    ├── setup-local.sh   # Local development setup
-    └── backup.sh        # Backup configurations
+    ├── START_DASHBOARD.sh    # Start dashboard (Linux/Mac)
+    ├── START_DASHBOARD.bat   # Start dashboard (Windows)
+    └── diagnose-activation.ps1  # JetBrains diagnostic
 ```
 
 ## 🚀 Quick Start
@@ -112,6 +112,10 @@ npm run dev:mcp
 
 **Tech Stack:** Node.js, TypeScript, MCP SDK, Datalore Cloud API
 
+## CI Status
+
+[![Agent API CI](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml/badge.svg?branch=Scarmonit)](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml)
+
 ## 🔧 Development
 
 ### Working with AI CLI Tools
@@ -180,6 +184,8 @@ npm run deploy:all
 - **[Deployment Guide](docs/deployment.md)** - Production deployment
 - **[API Documentation](docs/api.md)** - API reference
 - **[Architecture Decisions](docs/architecture.md)** - Design decisions
+- **[AI Model Deployment](docs/AI_MODEL_DEPLOYMENT.md)** - Best practices for AI model deployment
+- **[Technical Blog](docs/blog/README.md)** - Insights, tutorials, and tech deep dives
 
 ## 🔐 Environment Variables
 
@@ -225,3 +231,46 @@ This project is private and proprietary to Scarmonit Industries.
   <br>
   <em>Intelligence at the Speed of Thought</em>
 </div>
+
+## 🛠️ Troubleshooting & Support
+
+### JetBrains IDE Activation Issues
+If you're experiencing activation problems with JetBrains IDEs (IntelliJ, WebStorm, PyCharm, etc.):
+
+**Run Diagnostic Tool:**
+```powershell
+./scripts/diagnose-activation.ps1
+```
+
+**Common Issues:**
+- Activation fails with corrupted data or DnsFilter error
+- ja-netfilter blocking brucege.com
+- Cannot access activation server
+- Mac "Permission denied" error
+
+**Quick Fixes:**
+- Update plugin to latest version
+- Edit ja-netfilter DNS config if installed
+- Use offline activation if network blocked
+- Fix permissions on Mac: `sudo chmod 777 ~/.config`
+
+**📖 Full Guide:** [docs/JETBRAINS_ACTIVATION_GUIDE.md](docs/JETBRAINS_ACTIVATION_GUIDE.md)
+
+**Support Channels:**
+- WeChat: gejun12311
+- QQ Group: 575733084
+
+### MCP Agent Personas Issues
+If agent personas aren't loading in Copilot Chat:
+
+**Run Diagnostic:**
+```powershell
+.\mcp-server\restart-mcp.ps1
+```
+
+**Test Tools:**
+```
+Run MCP tool list_agents
+```
+
+**📖 Full Guide:** [MCP_AGENT_USAGE.md](MCP_AGENT_USAGE.md)

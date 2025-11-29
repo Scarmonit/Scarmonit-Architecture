@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "scarmonit-mcp": {
+      "command": "node",
+      "args": ["C:/Users/scarm/IdeaProjects/Scarmonit-Architecture/mcp-server/build/index.js"],
+      "env": {}
+    }
+  }
+}

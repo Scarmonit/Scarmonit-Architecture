@@ -1,0 +1,11 @@
+{
+  "name": "scarmonit-monitor",
+  "version": "1.0.0",
+  "description": "MCP Server for Scarmonit Health Monitoring",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "puppeteer": "^23.0.0"
+  }
+}
