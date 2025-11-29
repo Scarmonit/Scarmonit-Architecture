@@ -54,7 +54,8 @@ app.post('/api/analyze', async (c) => {
     });
     return c.json(response);
   } catch (e) {
-    return c.json({ error: 'Analysis Failed' }, 500);
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Analysis Failed', details: errorMessage }, 500);
   }
 });
 
@@ -144,7 +145,7 @@ app.post('/api/reports', async (c) => {
   }
   
   const timestamp = Date.now();
-  const reportId = body.id || timestamp;
+  const reportId = body.id || crypto.randomUUID();
   const id = `report:${reportId}`;
   
   const report = {
@@ -177,11 +178,19 @@ app.put('/api/reports/:id', async (c) => {
   const body = await c.req.json();
   const existingReport = JSON.parse(existing);
   
+  // Only allow updating specific fields
+  const allowedFields = ['task', 'result', 'status', 'findings', 'recommendations', 'nextSteps', 'metadata'];
+  const updates: Record<string, unknown> = {};
+  
+  for (const field of allowedFields) {
+    if (body[field] !== undefined) {
+      updates[field] = body[field];
+    }
+  }
+  
   const updatedReport = {
     ...existingReport,
-    ...body,
-    id: existingReport.id,
-    createdAt: existingReport.createdAt,
+    ...updates,
     updatedAt: new Date().toISOString(),
   };
   
