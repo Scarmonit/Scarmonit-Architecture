@@ -5,10 +5,10 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      lines: 70,
-      statements: 70,
-      branches: 70,
-      functions: 70,
+      lines: 80,
+      statements: 80,
+      branches: 75,
+      functions: 80,
     },
   },
 });
