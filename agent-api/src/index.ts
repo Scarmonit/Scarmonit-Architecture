@@ -18,15 +18,19 @@ interface AnalyzeProblemRequest {
   context?: string;
 }
 
+type ProblemComplexity = 'low' | 'medium' | 'high';
+
+interface ProblemAnalysis {
+  summary: string;
+  keyInsights: string[];
+  recommendedActions: string[];
+  dataCollectionPlan: string[];
+  riskFactors: string[];
+  complexity: ProblemComplexity;
+}
+
 interface AnalyzeProblemResponse {
-  analysis: {
-    summary: string;
-    keyInsights: string[];
-    recommendedActions: string[];
-    dataCollectionPlan: string[];
-    riskFactors: string[];
-    complexity: 'low' | 'medium' | 'high';
-  };
+  analysis: ProblemAnalysis;
   metadata: {
     domain: string;
     analyzedAt: string;
@@ -150,7 +154,7 @@ Focus on:
       : '';
 
     // Try to parse JSON from the response
-    let analysis: AnalyzeProblemResponse['analysis'];
+    let analysis: ProblemAnalysis;
     try {
       // Try to extract JSON from the response text
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
@@ -164,7 +168,7 @@ Focus on:
           recommendedActions: ['Review the generated analysis'],
           dataCollectionPlan: ['Gather more context about the problem'],
           riskFactors: ['Incomplete information may affect accuracy'],
-          complexity: 'medium',
+          complexity: 'medium' as ProblemComplexity,
         };
       }
     } catch {
@@ -175,7 +179,7 @@ Focus on:
         recommendedActions: ['Review the generated analysis'],
         dataCollectionPlan: ['Gather more context about the problem'],
         riskFactors: ['Incomplete information may affect accuracy'],
-        complexity: 'medium',
+        complexity: 'medium' as ProblemComplexity,
       };
     }
 
