@@ -4,7 +4,8 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
-    "start": "wrangler dev"
+    "start": "wrangler dev",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240101.0",
@@ -14,6 +15,7 @@
   "main": "src/index.ts",
   "dependencies": {
     "@cloudflare/ai": "^1.2.2",
+    "base64-js": "^1.5.1",
     "hono": "^4.10.7",
     "mustache": "^4.2.0"
   }
