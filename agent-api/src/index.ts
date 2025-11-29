@@ -30,28 +30,6 @@ class MockKV {
 // Singleton MockKV for local/test mode persistence
 const mockKvSingleton = new MockKV();
 
-// --- INTERFACES ---
-
-// Technology Trends Types
-interface TechnologyTrend {
-  name: string;
-  adoptionRate: number;
-  previousAdoptionRate?: number;
-  applications: string[];
-  benefits: string[];
-  concerns?: string[];
-}
-
-interface TechnologyTrendsReport {
-  id: string;
-  reportDate: string;
-  quarter: string;
-  trends: TechnologyTrend[];
-  insights: string[];
-  recommendations: string[];
-  submittedBy?: string;
-}
-
 // Define bindings
 type Bindings = {
   AGENT_CACHE: KVNamespace;
@@ -178,6 +156,26 @@ interface Insight {
   createdAt: string;
   source?: string;
   metadata?: Record<string, unknown>;
+}
+
+// Types for Technology Trends API (from PR #883)
+interface TechnologyTrend {
+  name: string;
+  adoptionRate: number;
+  previousAdoptionRate?: number;
+  applications: string[];
+  benefits: string[];
+  concerns?: string[];
+}
+
+interface TechnologyTrendsReport {
+  id: string;
+  reportDate: string;
+  quarter: string;
+  trends: TechnologyTrend[];
+  insights: string[];
+  recommendations: string[];
+  submittedBy?: string;
 }
 
 // Types for AI-powered solutions messaging (from PR #859)
@@ -375,7 +373,7 @@ app.post('/api/chat', async (c) => {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
-  }
+  } 
 
   const parsed = chatSchema.safeParse(body);
   if (!parsed.success) {
@@ -441,7 +439,7 @@ app.post('/api/analyze', async (c) => {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
-  }
+  } 
 
   const parsed = analyzeSchema.safeParse(body);
   if (!parsed.success) {
@@ -1196,72 +1194,15 @@ app.delete('/api/insights/:id', async (c) => {
   return c.json({ success: true, id });
 });
 
-// --- AI-POWERED SOLUTIONS MESSAGING ENDPOINT (From PR #859) ---
+// --- TECHNOLOGY TRENDS ENDPOINTS (From PR #883) ---
 
-// AI-Powered Solutions Messaging Endpoint
-app.get('/api/messaging/ai-solutions', (c) => {
-  const messaging: MessagingContent = {
-    headline: 'Unlocking the Power of AI-Powered Solutions',
-    subheadline: 'Revolutionizing industries with game-changing AI capabilities',
-    keyMessages: [
-      {
-        id: 1,
-        title: 'Unlock the Power of Data',
-        description: 'Leverage AI-powered solutions to unlock actionable insights from vast amounts of data.',
-      },
-      {
-        id: 2,
-        title: 'Augment Human Capabilities',
-        description: 'Automate repetitive tasks and enhance accuracy with AI-driven tools.',
-      },
-      {
-        id: 3,
-        title: 'Transform Industries',
-        description: 'Revolutionize healthcare, finance, e-commerce, education, and more with AI-powered solutions.',
-      },
-      {
-        id: 4,
-        title: 'Stay Ahead of the Competition',
-        description: 'Drive innovation and growth through real-time data-driven insights.',
-      },
-      {
-        id: 5,
-        title: 'Unlock New Opportunities',
-        description: 'Discover how AI-powered solutions can take your business to new heights.',
-      },
-    ],
-    benefits: [
-      'Identify patterns and trends, optimizing processes for improved efficiency',
-      'Predict customer behavior, enhancing personalized experiences',
-      'Anticipate market shifts, making informed investments',
-      'Automate repetitive tasks, freeing up resources for high-value activities',
-      'Enhance accuracy and speed in data processing, reducing errors and increasing productivity',
-      'Unlock new revenue streams through intelligent forecasting and predictive analytics',
-    ],
-    industries: [
-      'Healthcare - AI-driven diagnosis and treatment plans',
-      'Finance - Automated processing and risk assessment',
-      'E-commerce - Personalized product recommendations and chatbots',
-      'Education - Adaptive learning and intelligent tutoring',
-    ],
-    callToAction: {
-      text: 'Get Ready to Unlock Your Potential',
-      description: 'Join the AI-powered revolution and discover how these cutting-edge solutions can transform your business.',
-    },
-  };
-
-  return c.json(messaging);
-});
-
-// --- TECHNOLOGY TRENDS ENDPOINTS (from PR #883) ---
-
-// Get the latest technology trends summary
+// Get the latest technology trends summary (must be before :id route)
 app.get('/api/trends/summary/latest', async (c) => {
   const list = await c.env.AGENT_CACHE.list({ prefix: 'trend:' });
   if (list.keys.length === 0) {
-    return c.json({
+    return c.json({ 
       message: 'No trend reports available',
-      summary: null
+      summary: null 
     });
   }
   
@@ -1347,6 +1288,63 @@ app.post('/api/trends', async (c) => {
   
   await c.env.AGENT_CACHE.put(`trend:${reportId}`, JSON.stringify(report));
   return c.json({ success: true, id: reportId, report });
+});
+
+// --- AI-POWERED SOLUTIONS MESSAGING ENDPOINT (From PR #859) ---
+
+// AI-Powered Solutions Messaging Endpoint
+app.get('/api/messaging/ai-solutions', (c) => {
+  const messaging: MessagingContent = {
+    headline: 'Unlocking the Power of AI-Powered Solutions',
+    subheadline: 'Revolutionizing industries with game-changing AI capabilities',
+    keyMessages: [
+      {
+        id: 1,
+        title: 'Unlock the Power of Data',
+        description: 'Leverage AI-powered solutions to unlock actionable insights from vast amounts of data.',
+      },
+      {
+        id: 2,
+        title: 'Augment Human Capabilities',
+        description: 'Automate repetitive tasks and enhance accuracy with AI-driven tools.',
+      },
+      {
+        id: 3,
+        title: 'Transform Industries',
+        description: 'Revolutionize healthcare, finance, e-commerce, education, and more with AI-powered solutions.',
+      },
+      {
+        id: 4,
+        title: 'Stay Ahead of the Competition',
+        description: 'Drive innovation and growth through real-time data-driven insights.',
+      },
+      {
+        id: 5,
+        title: 'Unlock New Opportunities',
+        description: 'Discover how AI-powered solutions can take your business to new heights.',
+      },
+    ],
+    benefits: [
+      'Identify patterns and trends, optimizing processes for improved efficiency',
+      'Predict customer behavior, enhancing personalized experiences',
+      'Anticipate market shifts, making informed investments',
+      'Automate repetitive tasks, freeing up resources for high-value activities',
+      'Enhance accuracy and speed in data processing, reducing errors and increasing productivity',
+      'Unlock new revenue streams through intelligent forecasting and predictive analytics',
+    ],
+    industries: [
+      'Healthcare - AI-driven diagnosis and treatment plans',
+      'Finance - Automated processing and risk assessment',
+      'E-commerce - Personalized product recommendations and chatbots',
+      'Education - Adaptive learning and intelligent tutoring',
+    ],
+    callToAction: {
+      text: 'Get Ready to Unlock Your Potential',
+      description: 'Join the AI-powered revolution and discover how these cutting-edge solutions can transform your business.',
+    },
+  };
+
+  return c.json(messaging);
 });
 
 export default app;
