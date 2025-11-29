@@ -135,12 +135,19 @@ app.post('/api/agent-tasks', async (c) => {
       return c.json({ error: 'Missing required fields: task and result' }, 400);
     }
     
+    // Validate status if provided
+    const validStatuses: TaskStatus[] = ['pending', 'completed', 'failed'];
+    const status: TaskStatus = validStatuses.includes(body.status) ? body.status : 'pending';
+    
+    // Use crypto.randomUUID() for robust ID generation
+    const taskId = body.id || crypto.randomUUID();
+    
     const task: AgentTask = {
-      id: `task:${body.id || Date.now()}`,
+      id: `task:${taskId}`,
       agentId: body.agentId || 'autonomous-agent',
       task: body.task,
       result: body.result,
-      status: body.status || 'completed',
+      status,
       timestamp: Date.now(),
       metadata: body.metadata
     };

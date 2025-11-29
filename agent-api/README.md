@@ -111,7 +111,7 @@ Response:
 
 ### Agent Tasks
 
-Submit completed autonomous agent tasks and retrieve task history.
+Submit autonomous agent tasks and retrieve task history.
 
 #### Submit Task
 
@@ -130,11 +130,13 @@ Content-Type: application/json
 }
 ```
 
+**Note:** The `status` field accepts `"pending"`, `"completed"`, or `"failed"`. If not provided, defaults to `"pending"`.
+
 Response:
 ```json
 {
   "success": true,
-  "id": "task:1701234567890",
+  "id": "task:550e8400-e29b-41d4-a716-446655440000",
   "message": "Task recorded successfully"
 }
 ```
