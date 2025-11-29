@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Bot,
   Play,
@@ -10,19 +10,37 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
-  Search
+  Search,
+  Loader2
 } from 'lucide-react';
+
+// API configuration - uses environment variable or falls back to production URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://agent-api.scarmonit.workers.dev';
+
+// API response types
+interface TaskSubmitResponse {
+  success: boolean;
+  taskId: string;
+  message: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+}
+
+interface ApiError {
+  error: string;
+  details?: string;
+}
 
 interface Agent {
   id: string;
   name: string;
   type: string;
-  status: 'active' | 'idle' | 'error' | 'paused';
+  status: 'active' | 'idle' | 'error' | 'paused' | 'starting';
   task: string;
   completedTasks: number;
   uptime: string;
   cpu: number;
   memory: number;
+  taskId?: string; // Backend task ID when running
 }
 
 export function AgentManager() {
@@ -43,6 +61,7 @@ export function AgentManager() {
       case 'active': return 'status-online';
       case 'idle': return 'status-idle';
       case 'paused': return 'status-loading';
+      case 'starting': return 'status-loading';
       case 'error': return 'status-offline';
       default: return 'status-idle';
     }
@@ -53,23 +72,90 @@ export function AgentManager() {
       case 'active': return <Zap size={14} />;
       case 'idle': return <Clock size={14} />;
       case 'paused': return <Pause size={14} />;
+      case 'starting': return <Loader2 size={14} className="animate-spin" />;
       case 'error': return <AlertTriangle size={14} />;
       default: return <Clock size={14} />;
     }
   };
 
-  const toggleAgent = (id: string) => {
-    setAgents(prev => prev.map(agent => {
-      if (agent.id === id) {
-        if (agent.status === 'active') {
-          return { ...agent, status: 'paused' as const, task: 'Paused by user', cpu: 0 };
-        } else if (agent.status === 'paused' || agent.status === 'idle') {
-          return { ...agent, status: 'active' as const, task: 'Resuming...', cpu: 30 };
-        }
+  // Submit task to backend API and start agent
+  const startAgent = useCallback(async (agent: Agent): Promise<void> => {
+    // Set agent to starting state
+    setAgents(prev => prev.map(a =>
+      a.id === agent.id
+        ? { ...a, status: 'starting' as const, task: 'Connecting to backend...', cpu: 10 }
+        : a
+    ));
+
+    try {
+      const response = await fetch(`${API_URL}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: `Execute ${agent.type.toLowerCase()} task for ${agent.name}`,
+          agentType: agent.type,
+          agentId: agent.id,
+          domain: 'general'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as ApiError;
+        throw new Error(errorData.error || `HTTP ${response.status}`);
       }
-      return agent;
-    }));
-  };
+
+      const data = await response.json() as TaskSubmitResponse;
+
+      if (data.success) {
+        // Agent started successfully
+        setAgents(prev => prev.map(a =>
+          a.id === agent.id
+            ? {
+                ...a,
+                status: 'active' as const,
+                task: `Running: ${data.taskId}`,
+                taskId: data.taskId,
+                cpu: 45
+              }
+            : a
+        ));
+        console.log(`Agent ${agent.name} started with task ID: ${data.taskId}`);
+      } else {
+        throw new Error(data.message || 'Failed to start agent');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`Failed to start agent ${agent.name}:`, errorMessage);
+
+      // Set agent to error state
+      setAgents(prev => prev.map(a =>
+        a.id === agent.id
+          ? { ...a, status: 'error' as const, task: `Error: ${errorMessage}`, cpu: 0 }
+          : a
+      ));
+    }
+  }, []);
+
+  // Pause agent (local state only - backend doesn't have pause endpoint yet)
+  const pauseAgent = useCallback((agent: Agent): void => {
+    setAgents(prev => prev.map(a =>
+      a.id === agent.id
+        ? { ...a, status: 'paused' as const, task: 'Paused by user', cpu: 0 }
+        : a
+    ));
+  }, []);
+
+  // Toggle agent state - calls backend API for start, local for pause
+  const toggleAgent = useCallback(async (id: string): Promise<void> => {
+    const agent = agents.find(a => a.id === id);
+    if (!agent) return;
+
+    if (agent.status === 'active') {
+      pauseAgent(agent);
+    } else if (agent.status === 'paused' || agent.status === 'idle') {
+      await startAgent(agent);
+    }
+  }, [agents, startAgent, pauseAgent]);
 
   const filteredAgents = agents.filter(agent => {
     const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -80,6 +166,7 @@ export function AgentManager() {
 
   const stats = [
     { label: 'Active', value: agents.filter(a => a.status === 'active').length, color: 'var(--color-success)' },
+    { label: 'Starting', value: agents.filter(a => a.status === 'starting').length, color: 'var(--color-primary)' },
     { label: 'Idle', value: agents.filter(a => a.status === 'idle').length, color: 'var(--text-muted)' },
     { label: 'Paused', value: agents.filter(a => a.status === 'paused').length, color: 'var(--color-warning)' },
     { label: 'Error', value: agents.filter(a => a.status === 'error').length, color: 'var(--color-danger)' },
@@ -128,7 +215,7 @@ export function AgentManager() {
                 style={{ width: '200px' }}
               />
             </div>
-            <select 
+            <select
               className="input"
               style={{ width: 'auto' }}
               value={filterStatus}
@@ -136,6 +223,7 @@ export function AgentManager() {
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
+              <option value="starting">Starting</option>
               <option value="idle">Idle</option>
               <option value="paused">Paused</option>
               <option value="error">Error</option>
@@ -222,13 +310,19 @@ export function AgentManager() {
 
             {/* Actions */}
             <div className="flex gap-2">
-              <button 
+              <button
                 className={`btn ${agent.status === 'active' ? 'btn-secondary' : 'btn-primary'} flex-1`}
                 onClick={() => toggleAgent(agent.id)}
-                disabled={agent.status === 'error'}
+                disabled={agent.status === 'error' || agent.status === 'starting'}
               >
-                {agent.status === 'active' ? <Pause size={16} /> : <Play size={16} />}
-                {agent.status === 'active' ? 'Pause' : 'Start'}
+                {agent.status === 'starting' ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : agent.status === 'active' ? (
+                  <Pause size={16} />
+                ) : (
+                  <Play size={16} />
+                )}
+                {agent.status === 'starting' ? 'Starting...' : agent.status === 'active' ? 'Pause' : 'Start'}
               </button>
               <button className="btn btn-ghost">
                 <Terminal size={16} />

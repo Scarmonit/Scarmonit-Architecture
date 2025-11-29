@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scarmonit API Diagnostic Tool</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { color: #818cf8; margin-bottom: 8px; }
+    .subtitle { color: #64748b; margin-bottom: 32px; }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid #334155;
+    }
+    .status-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .status-working { background: #064e3b; border: 1px solid #10b981; }
+    .status-broken { background: #7f1d1d; border: 1px solid #ef4444; }
+    .status-testing { background: #1e3a5f; border: 1px solid #3b82f6; }
+    .indicator {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+    }
+    .indicator-working { background: #10b981; box-shadow: 0 0 10px #10b981; }
+    .indicator-broken { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
+    .indicator-testing { background: #3b82f6; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    button {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #4f46e5; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+    .error-box {
+      background: #1c1917;
+      border: 1px solid #7f1d1d;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .success-box {
+      background: #022c22;
+      border: 1px solid #064e3b;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    .label { color: #94a3b8; font-size: 14px; margin-bottom: 8px; }
+    .endpoint {
+      font-family: monospace;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+    .tests { display: flex; flex-direction: column; gap: 12px; }
+    .test-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 8px;
+    }
+    .test-status { font-weight: 600; min-width: 80px; }
+    .test-name { flex: 1; }
+    .test-time { color: #64748b; font-size: 14px; }
+    .pass { color: #10b981; }
+    .fail { color: #ef4444; }
+    .pending { color: #f59e0b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Scarmonit API Diagnostic Tool</h1>
+    <p class="subtitle">Verify backend connectivity before debugging frontend</p>
+
+    <div class="card">
+      <div class="label">API Endpoint</div>
+      <div class="endpoint" id="apiUrl">https://agent-api.scarmonit.workers.dev</div>
+
+      <div id="statusBox" class="status-box status-testing">
+        <div class="indicator indicator-testing"></div>
+        <span id="statusText">Click button to test API connection</span>
+      </div>
+
+      <div style="margin-top: 20px; display: flex; gap: 12px;">
+        <button id="testBtn" onclick="runAllTests()">Test API Connection</button>
+        <button onclick="testAgentRun()" style="background: #059669;">Test Run Agent</button>
+      </div>
+
+      <div id="errorDetails" style="display: none;"></div>
+      <div id="successDetails" style="display: none;"></div>
+    </div>
+
+    <div class="card">
+      <div class="label">Individual Test Results</div>
+      <div class="tests" id="testResults">
+        <div class="test-item">
+          <span class="test-status pending" id="test1-status">PENDING</span>
+          <span class="test-name">GET /health - Health check endpoint</span>
+          <span class="test-time" id="test1-time">-</span>
+        </div>
+        <div class="test-item">
+          <span class="test-status pending" id="test2-status">PENDING</span>
+          <span class="test-name">GET / - Root status endpoint</span>
+          <span class="test-time" id="test2-time">-</span>
+        </div>
+        <div class="test-item">
+          <span class="test-status pending" id="test3-status">PENDING</span>
+          <span class="test-name">POST /api/tasks - Submit task endpoint</span>
+          <span class="test-time" id="test3-time">-</span>
+        </div>
+        <div class="test-item">
+          <span class="test-status pending" id="test4-status">PENDING</span>
+          <span class="test-name">GET /api/agents - List agents endpoint</span>
+          <span class="test-time" id="test4-time">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">Diagnostic Information</div>
+      <pre id="diagnosticInfo" style="background: #0f172a; padding: 16px; border-radius: 8px; font-size: 13px; overflow-x: auto;">
+Waiting for tests to run...</pre>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://agent-api.scarmonit.workers.dev';
+
+    function updateStatus(status, text) {
+      const box = document.getElementById('statusBox');
+      const statusText = document.getElementById('statusText');
+      box.className = 'status-box status-' + status;
+      box.querySelector('.indicator').className = 'indicator indicator-' + status;
+      statusText.textContent = text;
+    }
+
+    function updateTest(num, passed, time) {
+      const statusEl = document.getElementById(`test${num}-status`);
+      const timeEl = document.getElementById(`test${num}-time`);
+      statusEl.textContent = passed ? 'PASS' : 'FAIL';
+      statusEl.className = 'test-status ' + (passed ? 'pass' : 'fail');
+      timeEl.textContent = time + 'ms';
+    }
+
+    async function runTest(endpoint, method = 'GET', body = null) {
+      const start = performance.now();
+      try {
+        const options = {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          mode: 'cors'
+        };
+        if (body) options.body = JSON.stringify(body);
+
+        const response = await fetch(API_URL + endpoint, options);
+        const time = Math.round(performance.now() - start);
+        const data = await response.json();
+
+        return {
+          success: response.ok,
+          status: response.status,
+          data,
+          time,
+          error: null
+        };
+      } catch (error) {
+        const time = Math.round(performance.now() - start);
+        return {
+          success: false,
+          status: 0,
+          data: null,
+          time,
+          error: error.message
+        };
+      }
+    }
+
+    async function runAllTests() {
+      const btn = document.getElementById('testBtn');
+      btn.disabled = true;
+      btn.textContent = 'Testing...';
+      updateStatus('testing', 'Running API tests...');
+
+      const diagnostics = [];
+      let allPassed = true;
+
+      // Test 1: Health check
+      const test1 = await runTest('/health');
+      updateTest(1, test1.success, test1.time);
+      diagnostics.push(`Test 1 - GET /health: ${test1.success ? 'PASS' : 'FAIL'} (${test1.time}ms)`);
+      diagnostics.push(`  Response: ${JSON.stringify(test1.data || test1.error)}`);
+      if (!test1.success) allPassed = false;
+
+      // Test 2: Root status
+      const test2 = await runTest('/');
+      updateTest(2, test2.success, test2.time);
+      diagnostics.push(`Test 2 - GET /: ${test2.success ? 'PASS' : 'FAIL'} (${test2.time}ms)`);
+      diagnostics.push(`  Response: ${JSON.stringify(test2.data || test2.error)}`);
+      if (!test2.success) allPassed = false;
+
+      // Test 3: Submit task
+      const test3 = await runTest('/api/tasks', 'POST', {
+        task: 'Diagnostic test task',
+        agentType: 'diagnostic'
+      });
+      updateTest(3, test3.success, test3.time);
+      diagnostics.push(`Test 3 - POST /api/tasks: ${test3.success ? 'PASS' : 'FAIL'} (${test3.time}ms)`);
+      diagnostics.push(`  Response: ${JSON.stringify(test3.data || test3.error)}`);
+      if (!test3.success) allPassed = false;
+
+      // Test 4: List agents
+      const test4 = await runTest('/api/agents');
+      updateTest(4, test4.success, test4.time);
+      diagnostics.push(`Test 4 - GET /api/agents: ${test4.success ? 'PASS' : 'FAIL'} (${test4.time}ms)`);
+      diagnostics.push(`  Response: ${JSON.stringify(test4.data || test4.error)}`);
+      if (!test4.success) allPassed = false;
+
+      // Update overall status
+      if (allPassed) {
+        updateStatus('working', 'API Status: WORKING - All tests passed');
+        document.getElementById('successDetails').style.display = 'block';
+        document.getElementById('successDetails').innerHTML =
+          '<div class="success-box">All API endpoints are responding correctly.\n\nThe backend is working. The issue is in the frontend code.\n\nFix needed in: web-portal/src/components/AgentManager.tsx\nProblem: toggleAgent() function only updates local state, never calls API</div>';
+        document.getElementById('errorDetails').style.display = 'none';
+      } else {
+        updateStatus('broken', 'API Status: BROKEN - Some tests failed');
+        document.getElementById('errorDetails').style.display = 'block';
+        const failedTests = [];
+        if (!test1.success) failedTests.push(`/health: ${test1.error || 'HTTP ' + test1.status}`);
+        if (!test2.success) failedTests.push(`/: ${test2.error || 'HTTP ' + test2.status}`);
+        if (!test3.success) failedTests.push(`/api/tasks: ${test3.error || 'HTTP ' + test3.status}`);
+        if (!test4.success) failedTests.push(`/api/agents: ${test4.error || 'HTTP ' + test4.status}`);
+        document.getElementById('errorDetails').innerHTML =
+          '<div class="error-box">Failed Endpoints:\n' + failedTests.join('\n') + '\n\nPossible causes:\n1. Backend not deployed\n2. CORS not configured\n3. Network/firewall blocking requests\n4. Cloudflare Worker is down</div>';
+        document.getElementById('successDetails').style.display = 'none';
+      }
+
+      diagnostics.push('');
+      diagnostics.push('Browser: ' + navigator.userAgent);
+      diagnostics.push('Timestamp: ' + new Date().toISOString());
+      document.getElementById('diagnosticInfo').textContent = diagnostics.join('\n');
+
+      btn.disabled = false;
+      btn.textContent = 'Test API Connection';
+    }
+
+    async function testAgentRun() {
+      updateStatus('testing', 'Testing agent execution...');
+
+      const result = await runTest('/api/tasks', 'POST', {
+        task: 'Execute research analysis on current market trends',
+        agentType: 'Research Agent',
+        domain: 'general'
+      });
+
+      if (result.success && result.data?.success) {
+        updateStatus('working', 'Agent Run: SUCCESS - Task ID: ' + result.data.taskId);
+        document.getElementById('successDetails').style.display = 'block';
+        document.getElementById('successDetails').innerHTML =
+          '<div class="success-box">Agent task submitted successfully!\n\nTask ID: ' + result.data.taskId + '\nStatus: ' + result.data.status + '\n\nThis confirms the backend can receive and process agent run requests.\nThe frontend just needs to call this endpoint when the button is clicked.</div>';
+      } else {
+        updateStatus('broken', 'Agent Run: FAILED');
+        document.getElementById('errorDetails').style.display = 'block';
+        document.getElementById('errorDetails').innerHTML =
+          '<div class="error-box">Agent execution failed:\n' + JSON.stringify(result.error || result.data, null, 2) + '</div>';
+      }
+    }
+  </script>
+</body>
+</html>
