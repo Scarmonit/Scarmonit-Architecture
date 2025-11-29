@@ -54,7 +54,8 @@ app.post('/api/analyze', async (c) => {
     });
     return c.json(response);
   } catch (e) {
-    return c.json({ error: 'Analysis Failed' }, 500);
+    const message = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Analysis Failed', details: message }, 500);
   }
 });
 
@@ -112,10 +113,13 @@ app.get('/api/logs', async (c) => {
 
 // --- INNOVATIVE SOLUTIONS ENDPOINTS ---
 
-// Generate a unique ID using timestamp + random string
+// Generate a unique ID using timestamp + random string with crypto for better entropy
 function generateId(prefix: string): string {
   const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
+  // Use crypto.getRandomValues for better randomness in Workers environment
+  const array = new Uint8Array(6);
+  crypto.getRandomValues(array);
+  const random = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   return `${prefix}-${timestamp}-${random}`;
 }
 
@@ -146,7 +150,7 @@ interface InnovativeSolution {
 
 // Built-in innovative solutions proposed by autonomous agent
 // Static timestamp represents when these solutions were initially proposed
-const PROPOSAL_DATE = '2024-01-01T00:00:00.000Z';
+const INITIAL_SOLUTION_PROPOSAL_DATE = '2024-01-01T00:00:00.000Z';
 
 const proposedSolutions: InnovativeSolution[] = [
   {
@@ -157,8 +161,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'proposed',
     priority: 'high',
     benefits: ['Reduced latency', 'Improved performance', 'Enhanced system efficiency'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   },
   {
     id: 'sol-002',
@@ -168,8 +172,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'proposed',
     priority: 'high',
     benefits: ['Faster decision-making', 'Improved analytics', 'Enhanced customer experiences'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   },
   {
     id: 'sol-003',
@@ -179,8 +183,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'proposed',
     priority: 'critical',
     benefits: ['Reduced integration time', 'Automated error handling', 'Intelligent data mapping'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   },
   {
     id: 'sol-004',
@@ -190,8 +194,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'proposed',
     priority: 'medium',
     benefits: ['Greater flexibility', 'Improved scalability', 'Better fault tolerance'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   },
   {
     id: 'sol-005',
@@ -201,8 +205,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'proposed',
     priority: 'high',
     benefits: ['Loose coupling', 'Reduced dependencies', 'Improved resilience'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   },
   {
     id: 'sol-006',
@@ -212,8 +216,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'proposed',
     priority: 'low',
     benefits: ['Data integrity', 'Transparency', 'Immutability'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   },
   {
     id: 'sol-007',
@@ -223,8 +227,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'proposed',
     priority: 'medium',
     benefits: ['Intuitive communication', 'Human-machine interaction', 'Natural language understanding'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   },
   {
     id: 'sol-008',
@@ -234,8 +238,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'in_progress',
     priority: 'critical',
     benefits: ['Scalability', 'Flexibility', 'Cost-effectiveness'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   },
   {
     id: 'sol-009',
@@ -245,8 +249,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'proposed',
     priority: 'medium',
     benefits: ['Better monitoring', 'Improved debugging', 'Enhanced security'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   },
   {
     id: 'sol-010',
@@ -256,8 +260,8 @@ const proposedSolutions: InnovativeSolution[] = [
     status: 'proposed',
     priority: 'low',
     benefits: ['Natural interaction', 'Voice assistant support', 'AR interface compatibility'],
-    createdAt: PROPOSAL_DATE,
-    updatedAt: PROPOSAL_DATE
+    createdAt: INITIAL_SOLUTION_PROPOSAL_DATE,
+    updatedAt: INITIAL_SOLUTION_PROPOSAL_DATE
   }
 ];
 
@@ -401,7 +405,7 @@ app.get('/api/events', async (c) => {
   events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   
   // Validate and limit the results (max 100, default 50)
-  const requestedLimit = parseInt(c.req.query('limit') || '50');
+  const requestedLimit = parseInt(c.req.query('limit') || '50', 10);
   const limit = Math.min(Math.max(1, requestedLimit), 100);
   const type = c.req.query('type');
   
