@@ -38,7 +38,7 @@ type Bindings = {
 
 // --- TYPES ---
 
-// Agent task types (from #886)
+// Agent task types
 type TaskStatus = 'pending' | 'completed' | 'failed';
 
 interface AgentTask {
@@ -117,6 +117,34 @@ interface AnalyzeProblemResponse {
     analyzedAt: string;
     version: string;
   };
+}
+
+// Research methodology types (from PR #866)
+type MethodologyCategory = 'mixed-methods' | 'longitudinal' | 'mhealth' | 'big-data' | 'experimental' | 'observational';
+
+interface ResearchMethodology {
+  id: string;
+  name: string;
+  category: MethodologyCategory;
+  description: string;
+  strengths: string[];
+  limitations: string[];
+  contextualFactors?: string[];
+  aiIntegration?: boolean;
+}
+
+interface OptimizationProposal {
+  category: string;
+  recommendation: string;
+  priority: 'high' | 'medium' | 'low';
+  implementationSteps: string[];
+}
+
+interface ResearchAnalysisResult {
+  methodology: ResearchMethodology;
+  optimizations: OptimizationProposal[];
+  futureDirections: string[];
+  overallScore: number;
 }
 
 // --- CONSTANTS ---
@@ -337,38 +365,19 @@ app.post('/api/chat', async (c) => {
 
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json(response);
-<<<<<<< HEAD
-  } catch (e) {
-    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-    return c.json({ error: 'AI Generation Failed', details: errorMessage }, 500);
-=======
   } catch (e: any) {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     logger.error('Chat generation failure', { message: e?.message });
     return c.json({ error: ERROR_MESSAGES.AI_GENERATION_FAILED, details: e?.message }, 500);
->>>>>>> origin/Scarmonit
   }
 });
 
 // 2. Analyze Artifacts (With Caching)
 app.post('/api/analyze', async (c) => {
-<<<<<<< HEAD
-  const ai = new Ai(c.env.AI);
-  
-  let body: { data?: unknown; type?: string };
-  try {
-    body = await c.req.json();
-  } catch (parseError) {
-    return c.json({ error: 'Invalid JSON in request body' }, 400);
-  }
-  
-  const { data, type } = body;
-=======
   const startTime = Date.now();
   let isCacheHit = false;
   let isError = false;
->>>>>>> origin/Scarmonit
 
   let body: any;
   try { 
@@ -534,149 +543,7 @@ Focus on:
     return c.json(result);
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-<<<<<<< HEAD
-    return c.json({ error: 'Analysis Failed', details: errorMessage }, 500);
-  }
-});
-
-// 3. Complex Problem Analysis - Structured five-step analysis framework
-interface ComplexProblemInput {
-  problemDescription: string;
-  systemArchitecture?: string;
-  userRoles?: string[];
-  networkTopology?: string;
-  dataStorage?: string;
-  logs?: string;
-  additionalContext?: string;
-}
-
-interface AnalysisResult {
-  step: string;
-  findings: string[];
-  recommendations: string[];
-}
-
-interface ComplexProblemResponse {
-  problemSummary: string;
-  analysis: AnalysisResult[];
-  overallRiskLevel: 'low' | 'medium' | 'high' | 'critical';
-  prioritizedActions: string[];
-  implementationTimeline: string;
-}
-
-app.post('/api/analyze/complex', async (c) => {
-  const ai = new Ai(c.env.AI);
-  
-  let body: ComplexProblemInput;
-  try {
-    body = await c.req.json() as ComplexProblemInput;
-  } catch (parseError) {
-    return c.json({ error: 'Invalid JSON in request body' }, 400);
-  }
-
-  // Validate required field
-  if (!body.problemDescription || typeof body.problemDescription !== 'string') {
-    return c.json({ 
-      error: 'Missing required field: problemDescription',
-      usage: {
-        required: ['problemDescription'],
-        optional: ['systemArchitecture', 'userRoles', 'networkTopology', 'dataStorage', 'logs', 'additionalContext']
-      }
-    }, 400);
-  }
-
-  const contextParts: string[] = [
-    `Problem Description: ${body.problemDescription}`
-  ];
-
-  if (body.systemArchitecture) {
-    contextParts.push(`System Architecture: ${body.systemArchitecture}`);
-  }
-  if (body.userRoles && body.userRoles.length > 0) {
-    contextParts.push(`User Roles: ${body.userRoles.join(', ')}`);
-  }
-  if (body.networkTopology) {
-    contextParts.push(`Network Topology: ${body.networkTopology}`);
-  }
-  if (body.dataStorage) {
-    contextParts.push(`Data Storage: ${body.dataStorage}`);
-  }
-  if (body.logs) {
-    contextParts.push(`Logs/Incident Reports: ${body.logs}`);
-  }
-  if (body.additionalContext) {
-    contextParts.push(`Additional Context: ${body.additionalContext}`);
-  }
-
-  const contextString = contextParts.join('\n\n');
-
-  const prompt = `
-You are an expert security analyst and system architect. Analyze the following complex problem using a structured five-step approach.
-
-${contextString}
-
-Provide your analysis in the following JSON format:
-{
-  "problemSummary": "Brief summary of the problem",
-  "analysis": [
-    {
-      "step": "1. Information Gathering",
-      "findings": ["List of gathered information and observations"],
-      "recommendations": ["Recommendations based on findings"]
-    },
-    {
-      "step": "2. Situation Analysis", 
-      "findings": ["Identified vulnerabilities, threats, and risks"],
-      "recommendations": ["Security improvements to address findings"]
-    },
-    {
-      "step": "3. Impact Assessment",
-      "findings": ["Potential consequences including data breaches, system compromise, financial/reputational damage"],
-      "recommendations": ["Mitigation strategies for each impact"]
-    },
-    {
-      "step": "4. Plan Development",
-      "findings": ["Configuration changes, patches, controls, and education needed"],
-      "recommendations": ["Specific implementation steps"]
-    },
-    {
-      "step": "5. Prioritization",
-      "findings": ["Priority ranking of actions based on impact and feasibility"],
-      "recommendations": ["Implementation order and stakeholder involvement"]
-    }
-  ],
-  "overallRiskLevel": "low|medium|high|critical",
-  "prioritizedActions": ["Ordered list of recommended actions"],
-  "implementationTimeline": "Suggested timeline for implementation"
-}
-
-Respond only with valid JSON.
-`;
-
-  try {
-    const response = await ai.run('@cf/meta/llama-3-8b-instruct', {
-      messages: [{ role: 'user', content: prompt }],
-    });
-    
-    return c.json({
-      success: true,
-      input: {
-        problemDescription: body.problemDescription,
-        hasSystemArchitecture: !!body.systemArchitecture,
-        hasUserRoles: !!(body.userRoles && body.userRoles.length > 0),
-        hasNetworkTopology: !!body.networkTopology,
-        hasDataStorage: !!body.dataStorage,
-        hasLogs: !!body.logs,
-        hasAdditionalContext: !!body.additionalContext
-      },
-      analysis: response
-    });
-  } catch (e) {
-    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-    return c.json({ error: 'Complex Analysis Failed', details: errorMessage }, 500);
-=======
     return c.json({ error: 'Problem Analysis Failed', details: errorMessage }, 500);
->>>>>>> origin/Scarmonit
   }
 });
 
@@ -807,7 +674,7 @@ app.get('/api/logs', async (c) => {
 
 // --- AGENT TASK ENDPOINTS (from PR #886) ---
 
-// Submit a completed agent task (Original endpoint)
+// Submit a completed agent task
 app.post('/api/agent-tasks', async (c) => {
   try {
     const body = await c.req.json();
@@ -847,7 +714,7 @@ app.post('/api/agent-tasks', async (c) => {
   }
 });
 
-// Retrieve agent task history (Original endpoint)
+// Retrieve agent task history
 app.get('/api/agent-tasks', async (c) => {
   try {
     const list = await c.env.AGENT_CACHE.list({ prefix: 'task:' });
@@ -870,7 +737,7 @@ app.get('/api/agent-tasks', async (c) => {
   }
 });
 
-// Get a specific agent task by ID (Original endpoint)
+// Get a specific agent task by ID
 app.get('/api/agent-tasks/:id', async (c) => {
   try {
     const id = c.req.param('id');
@@ -975,6 +842,210 @@ app.delete('/api/task-results/:id', async (c) => {
 
   await c.env.AGENT_CACHE.delete(`task-result:${id}`);
   return c.json({ success: true, message: 'Task result deleted' });
+});
+
+// --- COMPLEX PROBLEM ANALYSIS ENDPOINT (from PR #871 - vulnerabilities and threats) ---
+app.post('/api/analyze/complex', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { problem, context, systems } = body;
+
+    if (!problem) {
+      return c.json({ error: 'Missing required field: problem' }, 400);
+    }
+
+    const ai = new Ai(c.env.AI);
+    const prompt = `
+      Perform a structured 5-step security analysis for the following problem:
+      Problem: ${problem}
+      Context: ${context || 'Industrial/Enterprise environment'}
+      Systems Involved: ${systems || 'General infrastructure'}
+
+      Follow this framework:
+      1. Information Gathering (System architecture, roles, data flows)
+      2. Situation Analysis (Vulnerabilities, threats, risks)
+      3. Impact Assessment (Data breaches, downtime, financial loss)
+      4. Plan Development (Configuration, patching, controls, education)
+      5. Prioritization (Immediate vs long-term actions)
+
+      Provide the response in JSON format.
+    `;
+
+    const response = await ai.run(AI_MODEL, { messages: [{ role: 'user', content: prompt }] });
+    return c.json(response);
+  } catch (e: any) {
+    logger.error('Complex analysis failure', { message: e?.message });
+    return c.json({ error: ERROR_MESSAGES.ANALYSIS_FAILED, details: e?.message }, 500);
+  }
+});
+
+// --- RESEARCH METHODOLOGY ENDPOINTS (From PR #866) ---
+
+// Pre-defined optimization proposals based on autonomous agent research
+const optimizationProposals: OptimizationProposal[] = [
+  {
+    category: 'AI Integration',
+    recommendation: 'Utilize AI-powered tools for data collection, processing, and analysis',
+    priority: 'high',
+    implementationSteps: [
+      'Leverage ML algorithms to identify complex patterns',
+      'Predict outcomes using trained models',
+      'Personalize interventions based on AI insights'
+    ]
+  },
+  {
+    category: 'Contextual Factors',
+    recommendation: 'Incorporate contextual variables to better understand self-improvement processes',
+    priority: 'high',
+    implementationSteps: [
+      'Include environmental factors in data collection',
+      'Map social support networks',
+      'Account for individual differences in analysis'
+    ]
+  },
+  {
+    category: 'Measurement Tools',
+    recommendation: 'Develop more nuanced and context-specific measures of self-improvement constructs',
+    priority: 'medium',
+    implementationSteps: [
+      'Create specialized emotional intelligence measures',
+      'Develop mindfulness assessment tools',
+      'Integrate behavioral and physiological markers'
+    ]
+  },
+  {
+    category: 'Interdisciplinary Collaboration',
+    recommendation: 'Foster collaboration between researchers from diverse fields',
+    priority: 'medium',
+    implementationSteps: [
+      'Partner with psychology, neuroscience, and education researchers',
+      'Integrate computer science expertise',
+      'Develop comprehensive theories across disciplines'
+    ]
+  },
+  {
+    category: 'Longitudinal Flexibility',
+    recommendation: 'Incorporate flexible, adaptive designs that allow for modifications',
+    priority: 'medium',
+    implementationSteps: [
+      'Design adaptive research protocols',
+      'Use simulation-based approaches for modeling',
+      'Allow real-time adjustments based on findings'
+    ]
+  },
+  {
+    category: 'Real-World Impact',
+    recommendation: 'Prioritize research with direct implications for practice and policy',
+    priority: 'high',
+    implementationSteps: [
+      'Collaborate with practitioners and policymakers',
+      'Focus on actionable outcomes',
+      'Ensure community relevance'
+    ]
+  }
+];
+
+// Future research directions based on autonomous agent recommendations
+const futureDirections = [
+  'Personalized Self-Improvement: AI-powered systems providing tailored recommendations',
+  'Self-Improvement Ecosystems: Study interplay with broader systems (education, employment, healthcare)',
+  'Long-Term Follow-Up Studies: Longitudinal studies spanning multiple decades'
+];
+
+// Analyze research methodology and provide optimization recommendations
+app.post('/api/research/analyze', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { methodology } = body as { methodology?: Partial<ResearchMethodology> };
+
+    if (!methodology || !methodology.name || !methodology.category) {
+      return c.json({
+        error: 'Invalid request',
+        details: 'Methodology name and category are required'
+      }, 400);
+    }
+
+    // Calculate relevance score based on methodology category
+    const categoryScores: Record<MethodologyCategory, number> = {
+      'mixed-methods': 85,
+      'longitudinal': 90,
+      'mhealth': 88,
+      'big-data': 92,
+      'experimental': 75,
+      'observational': 70
+    };
+
+    const baseScore = categoryScores[methodology.category as MethodologyCategory] || 70;
+    const aiBonus = methodology.aiIntegration ? 5 : 0;
+    const contextBonus = methodology.contextualFactors?.length ? 
+      Math.min(methodology.contextualFactors.length, 3) : 0;
+
+    const overallScore = Math.min(100, baseScore + aiBonus + contextBonus);
+
+    // Filter relevant optimizations
+    const relevantOptimizations = optimizationProposals.filter(opt => {
+      if (methodology.aiIntegration && opt.category === 'AI Integration') return false;
+      if (opt.priority === 'high') return true;
+      if (methodology.category === 'longitudinal' && opt.category === 'Longitudinal Flexibility') return false;
+      return true;
+    });
+
+    const result: ResearchAnalysisResult = {
+      methodology: {
+        id: methodology.id || `method-${crypto.randomUUID()}`,
+        name: methodology.name,
+        category: methodology.category as MethodologyCategory,
+        description: methodology.description || '',
+        strengths: methodology.strengths || [],
+        limitations: methodology.limitations || [],
+        contextualFactors: methodology.contextualFactors,
+        aiIntegration: methodology.aiIntegration
+      },
+      optimizations: relevantOptimizations,
+      futureDirections,
+      overallScore
+    };
+
+    const analysisId = `research:${crypto.randomUUID()}`;
+    await c.env.AGENT_CACHE.put(analysisId, JSON.stringify(result));
+
+    return c.json(result);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Research Analysis Failed', details: errorMessage }, 500);
+  }
+});
+
+// Get optimization recommendations for a specific category
+app.get('/api/research/optimize', (c) => {
+  const category = c.req.query('category');
+  
+  if (category) {
+    const filtered = optimizationProposals.filter(
+      opt => opt.category.toLowerCase().includes(category.toLowerCase())
+    );
+    return c.json({
+      category,
+      optimizations: filtered,
+      futureDirections
+    });
+  }
+
+  return c.json({
+    optimizations: optimizationProposals,
+    futureDirections
+  });
+});
+
+// List all research analyses
+app.get('/api/research', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'research:' });
+  const analyses = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) analyses.push(JSON.parse(val));
+  }
+  return c.json(analyses);
 });
 
 export default app;
