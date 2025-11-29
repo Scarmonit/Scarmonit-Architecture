@@ -31,9 +31,9 @@ Scarmonit-Architecture/
 │   └── api.md           # API documentation
 │
 └── scripts/             # Automation and deployment scripts
-    ├── deploy-all.sh    # Deploy all components
-    ├── setup-local.sh   # Local development setup
-    └── backup.sh        # Backup configurations
+    ├── START_DASHBOARD.sh    # Start dashboard (Linux/Mac)
+    ├── START_DASHBOARD.bat   # Start dashboard (Windows)
+    └── diagnose-activation.ps1  # JetBrains diagnostic
 ```
 
 ## 🚀 Quick Start
@@ -238,7 +238,7 @@ If you're experiencing activation problems with JetBrains IDEs (IntelliJ, WebSto
 
 **Run Diagnostic Tool:**
 ```powershell
-.\diagnose-activation.ps1
+./scripts/diagnose-activation.ps1
 ```
 
 **Common Issues:**
