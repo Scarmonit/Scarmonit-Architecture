@@ -10,6 +10,7 @@ interface KVNamespace {
   get(key: string): Promise<string | null>;
   put(key: string, value: string): Promise<void>;
   list(options?: { prefix?: string }): Promise<{ keys: { name: string }[] }>;
+  delete(key: string): Promise<void>;
 }
 
 // Mock KV for Local Node.js execution
@@ -23,6 +24,7 @@ class MockKV {
   }
   async get(key: string) { return this.store.get(key) || null; }
   async put(key: string, val: string) { this.store.set(key, val); }
+  async delete(key: string) { this.store.delete(key); }
 }
 
 // Singleton MockKV for local/test mode persistence
@@ -36,7 +38,7 @@ type Bindings = {
 
 // --- TYPES ---
 
-// Agent task types
+// Agent task types (from #886)
 type TaskStatus = 'pending' | 'completed' | 'failed';
 
 interface AgentTask {
@@ -47,6 +49,19 @@ interface AgentTask {
   status: TaskStatus;
   timestamp: number;
   metadata?: Record<string, unknown>;
+}
+
+// Task result interface (from #872 - overlapping with AgentTask but kept for compatibility)
+type TaskResultStatus = 'pending' | 'completed' | 'failed';
+
+interface TaskResult {
+  id: string;
+  task: string;
+  result: string;
+  status: TaskResultStatus;
+  agentId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Types for operational efficiency (from PR #881)
@@ -631,7 +646,7 @@ app.get('/api/logs', async (c) => {
 
 // --- AGENT TASK ENDPOINTS (from PR #886) ---
 
-// Submit a completed agent task
+// Submit a completed agent task (Original endpoint)
 app.post('/api/agent-tasks', async (c) => {
   try {
     const body = await c.req.json();
@@ -671,7 +686,7 @@ app.post('/api/agent-tasks', async (c) => {
   }
 });
 
-// Retrieve agent task history
+// Retrieve agent task history (Original endpoint)
 app.get('/api/agent-tasks', async (c) => {
   try {
     const list = await c.env.AGENT_CACHE.list({ prefix: 'task:' });
@@ -694,7 +709,7 @@ app.get('/api/agent-tasks', async (c) => {
   }
 });
 
-// Get a specific agent task by ID
+// Get a specific agent task by ID (Original endpoint)
 app.get('/api/agent-tasks/:id', async (c) => {
   try {
     const id = c.req.param('id');
@@ -711,6 +726,94 @@ app.get('/api/agent-tasks/:id', async (c) => {
     const errorMessage = e instanceof Error ? e.message : 'Unknown error';
     return c.json({ error: 'Failed to retrieve task', details: errorMessage }, 500);
   }
+});
+
+// --- TASK RESULTS ENDPOINTS (from PR #872) ---
+// More structured/RESTful approach to task reporting
+
+// List all task results
+app.get('/api/task-results', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'task-result:' });
+  const taskResults: TaskResult[] = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) taskResults.push(JSON.parse(val) as TaskResult);
+  }
+  return c.json(taskResults);
+});
+
+// Get a specific task result by ID
+app.get('/api/task-results/:id', async (c) => {
+  const id = c.req.param('id');
+  const val = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  if (!val) {
+    return c.json({ error: 'Task result not found' }, 404);
+  }
+  return c.json(JSON.parse(val) as TaskResult);
+});
+
+// Create a new task result (for autonomous agents to report task completions)
+app.post('/api/task-results', async (c) => {
+  const body = await c.req.json();
+  
+  // Validate required fields (check for non-empty strings)
+  if (!body.task?.trim() || !body.result?.trim()) {
+    return c.json({ error: 'Missing required fields: task and result' }, 400);
+  }
+
+  const now = new Date().toISOString();
+  const id = body.id || crypto.randomUUID();
+  const taskResult: TaskResult = {
+    id,
+    task: body.task,
+    result: body.result,
+    status: body.status || 'completed',
+    agentId: body.agentId,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await c.env.AGENT_CACHE.put(`task-result:${id}`, JSON.stringify(taskResult));
+  return c.json({ success: true, id, taskResult }, 201);
+});
+
+// Update a task result
+app.put('/api/task-results/:id', async (c) => {
+  const id = c.req.param('id');
+  const existing = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  
+  if (!existing) {
+    return c.json({ error: 'Task result not found' }, 404);
+  }
+
+  const body = await c.req.json();
+  const existingData = JSON.parse(existing) as TaskResult;
+  const now = new Date().toISOString();
+  
+  const updated: TaskResult = {
+    ...existingData,
+    task: body.task ?? existingData.task,
+    result: body.result ?? existingData.result,
+    status: body.status ?? existingData.status,
+    agentId: body.agentId ?? existingData.agentId,
+    updatedAt: now,
+  };
+
+  await c.env.AGENT_CACHE.put(`task-result:${id}`, JSON.stringify(updated));
+  return c.json({ success: true, taskResult: updated });
+});
+
+// Delete a task result
+app.delete('/api/task-results/:id', async (c) => {
+  const id = c.req.param('id');
+  const existing = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  
+  if (!existing) {
+    return c.json({ error: 'Task result not found' }, 404);
+  }
+
+  await c.env.AGENT_CACHE.delete(`task-result:${id}`);
+  return c.json({ success: true, message: 'Task result deleted' });
 });
 
 export default app;
