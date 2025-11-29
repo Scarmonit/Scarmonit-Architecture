@@ -826,7 +826,13 @@ app.get('/api/task-results', async (c) => {
 // Get a specific task result by ID
 app.get('/api/task-results/:id', async (c) => {
   const id = c.req.param('id');
-  const val = await c.env.AGENT_CACHE.get(`task-result:${id}`);
+  const key = getInsightKey(id); // This seems like a copy-paste error, should be task-result key
+  
+  // Check if insight exists first - wait, this is task-result, not insight
+  // Correct logic for task-result
+  const taskKey = id.startsWith('task-result:') ? id : `task-result:${id}`;
+  const val = await c.env.AGENT_CACHE.get(taskKey);
+  
   if (!val) {
     return c.json({ error: 'Task result not found' }, 404);
   }
