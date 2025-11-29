@@ -109,6 +109,7 @@ Response:
 }
 ```
 
+<<<<<<< HEAD
 ### Complex Problem Analysis
 
 Analyze complex problems using a structured five-step framework:
@@ -130,12 +131,30 @@ Content-Type: application/json
   "dataStorage": "PostgreSQL for user credentials, Redis for sessions",
   "logs": "Connection timeout errors increasing at 9AM-11AM",
   "additionalContext": "Recent deployment of new rate limiting middleware"
+=======
+### Analyze Complex Problem
+
+Analyze a complex problem using the data collection specialist AI agent.
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/analyze-problem
+Content-Type: application/json
+
+{
+  "description": "How can we improve customer retention for our SaaS product?",
+  "domain": "business",
+  "stakeholders": ["product team", "customer success", "marketing"],
+  "dataTypes": ["user behavior", "churn data", "feedback surveys"],
+  "dataSources": ["analytics platform", "CRM", "support tickets"],
+  "context": "We've seen a 15% increase in churn over the last quarter"
+>>>>>>> origin/Scarmonit
 }
 ```
 
 Response:
 ```json
 {
+<<<<<<< HEAD
   "success": true,
   "input": {
     "problemDescription": "Authentication system showing intermittent failures during peak hours",
@@ -158,10 +177,40 @@ Response:
     "overallRiskLevel": "medium",
     "prioritizedActions": ["..."],
     "implementationTimeline": "..."
+=======
+  "analysis": {
+    "summary": "Customer churn analysis indicates multiple potential causes...",
+    "keyInsights": [
+      "Churn correlates with reduced feature engagement after week 3",
+      "Support ticket volume precedes cancellation by 2 weeks",
+      "Price sensitivity highest in SMB segment"
+    ],
+    "recommendedActions": [
+      "Implement proactive engagement during critical adoption period",
+      "Create early warning system based on support interactions",
+      "Review pricing tiers for small business customers"
+    ],
+    "dataCollectionPlan": [
+      "Extract user engagement metrics from analytics platform",
+      "Correlate support ticket history with churn events",
+      "Survey recently churned customers for qualitative feedback"
+    ],
+    "riskFactors": [
+      "Data quality may vary across sources",
+      "Historical bias in customer feedback"
+    ],
+    "complexity": "medium"
+  },
+  "metadata": {
+    "domain": "business",
+    "analyzedAt": "2025-11-29T13:53:19.653Z",
+    "version": "1.0.0"
+>>>>>>> origin/Scarmonit
   }
 }
 ```
 
+<<<<<<< HEAD
 **Request Fields:**
 
 | Field | Type | Required | Description |
@@ -173,6 +222,76 @@ Response:
 | `dataStorage` | string | No | Data storage and processing mechanisms |
 | `logs` | string | No | Relevant logs or incident reports |
 | `additionalContext` | string | No | Any additional context for the analysis |
+=======
+#### Request Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `description` | string | Yes | The problem description to analyze |
+| `domain` | string | No | Problem domain (e.g., "business", "technology", "healthcare") |
+| `stakeholders` | string[] | No | List of stakeholders involved |
+| `dataTypes` | string[] | No | Types of data to collect (e.g., "text", "metrics") |
+| `dataSources` | string[] | No | Preferred data sources |
+| `context` | string | No | Additional context for the analysis |
+
+### Agent Tasks
+
+Submit autonomous agent tasks and retrieve task history.
+
+#### Submit Task
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/agent-tasks
+Content-Type: application/json
+
+{
+  "task": "Provide insights on current technology",
+  "result": "Analysis of cloud computing, containerization, serverless...",
+  "agentId": "devops-specialist",
+  "status": "completed",
+  "metadata": {
+    "category": "technology-insights"
+  }
+}
+```
+
+**Note:** The `status` field accepts `"pending"`, `"completed"`, or `"failed"`. If not provided, defaults to `"pending"`.
+
+Response:
+```json
+{
+  "success": true,
+  "id": "task:550e8400-e29b-41d4-a716-446655440000",
+  "message": "Task recorded successfully"
+}
+```
+
+#### Get All Tasks
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/agent-tasks
+```
+
+Response:
+```json
+[
+  {
+    "id": "task:1701234567890",
+    "agentId": "devops-specialist",
+    "task": "Provide insights on current technology",
+    "result": "Analysis of cloud computing...",
+    "status": "completed",
+    "timestamp": 1701234567890
+  }
+]
+```
+
+#### Get Specific Task
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/agent-tasks/:id
+```
+>>>>>>> origin/Scarmonit
 
 ## Configuration
 
