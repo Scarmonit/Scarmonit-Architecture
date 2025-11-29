@@ -369,7 +369,7 @@ app.post('/api/chat', async (c) => {
   let body: any; 
   try { 
     body = await c.req.json(); 
-  } catch { 
+  } catch {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
@@ -435,7 +435,7 @@ app.post('/api/analyze', async (c) => {
   let body: any; 
   try { 
     body = await c.req.json(); 
-  } catch { 
+  } catch {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
@@ -1552,6 +1552,107 @@ app.post('/api/tasks/:taskId/clarify', async (c) => {
     message: 'Task updated with clarification',
     task: updatedTask,
   });
+});
+
+// --- AGENT TASK REPORTS (PR #870) ---
+
+// Get all agent task reports
+app.get('/api/reports', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'report:' });
+  const reports = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) reports.push(JSON.parse(val));
+  }
+  return c.json(reports);
+});
+
+// Get a specific report by ID
+app.get('/api/reports/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('report:') ? id : `report:${id}`;
+  const val = await c.env.AGENT_CACHE.get(key);
+  if (!val) {
+    return c.json({ error: 'Report not found' }, 404);
+  }
+  return c.json(JSON.parse(val));
+});
+
+// Submit a new agent task report
+app.post('/api/reports', async (c) => {
+  const body = await c.req.json();
+  
+  // Validate required fields
+  if (!body.task) {
+    return c.json({ error: 'Missing required field: task' }, 400);
+  }
+  
+  const timestamp = Date.now();
+  const reportId = body.id || crypto.randomUUID();
+  const id = `report:${reportId}`;
+  
+  const report = {
+    id: reportId,
+    task: body.task,
+    result: body.result || '',
+    status: body.status || 'completed',
+    agentId: body.agentId || 'autonomous-agent',
+    findings: body.findings || [],
+    recommendations: body.recommendations || [],
+    nextSteps: body.nextSteps || [],
+    metadata: body.metadata || {},
+    createdAt: new Date(timestamp).toISOString(),
+  };
+  
+  await c.env.AGENT_CACHE.put(id, JSON.stringify(report));
+  return c.json({ success: true, id: reportId, report }, 201);
+});
+
+// Update an existing report
+app.put('/api/reports/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('report:') ? id : `report:${id}`;
+  const existing = await c.env.AGENT_CACHE.get(key);
+  
+  if (!existing) {
+    return c.json({ error: 'Report not found' }, 404);
+  }
+  
+  const body = await c.req.json();
+  const existingReport = JSON.parse(existing);
+  
+  // Only allow updating specific fields
+  const allowedFields = ['task', 'result', 'status', 'findings', 'recommendations', 'nextSteps', 'metadata'];
+  const updates: Record<string, unknown> = {};
+  
+  for (const field of allowedFields) {
+    if (body[field] !== undefined) {
+      updates[field] = body[field];
+    }
+  }
+  
+  const updatedReport = {
+    ...existingReport,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  
+  await c.env.AGENT_CACHE.put(key, JSON.stringify(updatedReport));
+  return c.json({ success: true, report: updatedReport });
+});
+
+// Delete a report
+app.delete('/api/reports/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('report:') ? id : `report:${id}`;
+  const existing = await c.env.AGENT_CACHE.get(key);
+  
+  if (!existing) {
+    return c.json({ error: 'Report not found' }, 404);
+  }
+  
+  await c.env.AGENT_CACHE.delete(key);
+  return c.json({ success: true, message: 'Report deleted' });
 });
 
 export default app;
