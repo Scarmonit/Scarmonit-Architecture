@@ -26,7 +26,7 @@ function App() {
   const [systems, setSystems] = useState<SystemStatus[]>([
     { name: 'Web Portal', status: 'online', url: 'http://localhost:5174' },
     { name: 'MCP Server', status: 'loading' },
-    { name: 'Agent API', status: 'loading', url: 'https://agent.scarmonit.com' },
+    { name: 'Agent API', status: 'loading', url: 'https://agent-api.scarmonit.workers.dev' },
     { name: 'Copilot Extension', status: 'loading' },
   ])
   const [time, setTime] = useState(new Date())
@@ -245,6 +245,11 @@ function App() {
         <section className="info">
           <h2>Architecture</h2>
           <div className="arch-grid">
+            <div className="arch-item">
+              <span className="arch-icon">🐳</span>
+              <strong>Containerized</strong>
+              <span>Docker + Nginx</span>
+            </div>
             <div className="arch-item">
               <span className="arch-icon">⚛️</span>
               <strong>Web Portal</strong>
