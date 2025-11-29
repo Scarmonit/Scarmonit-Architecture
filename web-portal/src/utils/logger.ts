@@ -17,16 +17,12 @@ function push(entry: LogEntry) {
   // In browser we can still emit to console for now; could be toggled via env.
   const prefix = `[${entry.timestamp}] [${entry.level.toUpperCase()}]`
   if (entry.level === 'error') {
-    // eslint-disable-next-line no-console
     console.error(prefix, entry.message, entry.context || '')
   } else if (entry.level === 'warn') {
-    // eslint-disable-next-line no-console
     console.warn(prefix, entry.message, entry.context || '')
   } else if (entry.level === 'debug') {
-    // eslint-disable-next-line no-console
     console.debug(prefix, entry.message, entry.context || '')
   } else {
-    // eslint-disable-next-line no-console
     console.log(prefix, entry.message, entry.context || '')
   }
 }
@@ -46,5 +42,5 @@ export function getLogHistory(): LogEntry[] {
 
 // Expose for E2E tests
 if (typeof window !== 'undefined') {
-  ;(window as any).getLogHistory = getLogHistory
+  (window as unknown as { getLogHistory: typeof getLogHistory }).getLogHistory = getLogHistory
 }

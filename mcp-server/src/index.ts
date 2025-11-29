@@ -131,7 +131,7 @@ interface AgentInfo { name: string; file:string; summary: string; content: strin
 // Export loadAgents for reuse
 export async function loadAgents(force = false): Promise<AgentInfo[]> {
   const now = Date.now();
-  if (!force &&agentCache.files && now - agentCache.loadedAt < CACHE_TTL_MS) return agentCache.files;
+  if (!force && agentCache.files && now - agentCache.loadedAt < CACHE_TTL_MS) return agentCache.files;
   try {
     const entries = await readdir(AGENTS_DIR);
     const mdFiles = entries.filter(f => f.endsWith('.md'));
@@ -139,13 +139,13 @@ export async function loadAgents(force = false): Promise<AgentInfo[]> {
     for (const file of mdFiles) {
       try {
         const full = path.join(AGENTS_DIR, file);
-       const content = await readFile(full, 'utf8');
+        const content = await readFile(full, 'utf8');
         const firstLine = content.split(/\r?\n/)[0].trim();
         const title = firstLine.startsWith('#') ? firstLine.replace(/^#+\s*/, '') : file.replace('.md','');
         const summaryMatch = content.match(/##+\s+Summary[\s\S]*?(\r?\n\r?\n|$)/i);
         const summary = summaryMatch ? summaryMatch[0].split(/\r?\n/).slice(1,4).join(' ').trim() : '';
         agents.push({ name: title, file, summary, content });
-      }catch (innerErr) {
+      } catch (innerErr) {
         agents.push({ name: file.replace('.md',''), file, summary: 'Failed to parse', content: '' });
       }
     }
@@ -257,12 +257,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name === "check_system_status") {
     const component = (args?.component as string) || "all";
     const statuses = {
-      web:"Online (Cloudflare Pages)",
+      web: "Online (Cloudflare Pages)",
       api: "Online (Cloudflare Workers)",
     };
 
     if (component === "web") return { content: [{ type: "text", text: statuses.web }] };
-    if (component === "api") return { content: [{ type: "text", text: statuses.api}] };
+    if (component === "api") return { content: [{ type: "text", text: statuses.api }] };
 
     return {
      content: [{ type: "text", text: `Web: ${statuses.web}\nAPI: ${statuses.api}` }],
@@ -285,7 +285,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const licenseId = process.env.DATALORE_LICENSE_ID;
     if (licenseId) {
       return {
-content: [
+        content: [
           {
             type: "text",
             text: `Datalore Cloud Integration Active.\nLicense ID: ${licenseId}\nStatus: Connected`,
@@ -303,16 +303,16 @@ content: [
 
   if (name === 'list_agents') {
     const agents = await loadAgents(Boolean(args?.refresh));
-    if (!agents.length) return { content: [{ type: 'text',text: 'No agent personas foundor failed to load.' }] };
+    if (!agents.length) return { content: [{ type: 'text', text: 'No agent personas found or failed to load.' }] };
     const list = agents.map(a => `• ${a.name}${a.summary ? ' – ' + a.summary : ''}`).join('\n');
     return { content: [{ type: 'text', text: `Available Agents (cached ${new Date(agentCache.loadedAt).toISOString()}):\n${list}` }] };
   }
   if (name === 'get_agent_instructions') {
     const agentReq = (args?.agent || '').toString().trim().toLowerCase();
-    if (!agentReq) return { content: [{ type: 'text', text: 'Agent namerequired.' }] };
-    constagents = await loadAgents();
+    if (!agentReq) return { content: [{ type: 'text', text: 'Agent name required.' }] };
+    const agents = await loadAgents();
     const match = agents.find(a => a.name.toLowerCase() === agentReq || a.file.toLowerCase() === agentReq || a.file.toLowerCase() === agentReq + '.md');
-    if (!match) return { content: [{ type: 'text', text: `Agent '${agentReq}' notfound.` }] };
+    if (!match) return { content: [{ type: 'text', text: `Agent '${agentReq}' not found.` }] };
     const MAX_LEN = 8000;
     const out = match.content.length > MAX_LEN ? match.content.slice(0, MAX_LEN) + '\n\n[Truncated]' : match.content;
     return { content: [{ type: 'text', text: `# ${match.name}\n\n${out}` }] };
@@ -321,23 +321,23 @@ content: [
     const query = (args?.query || '').toString().trim();
     if (!query) return { content: [{ type: 'text', text: 'Query required.' }] };
     const agents = await loadAgents();
-const results = searchAgents(query, agents);
+    const results = searchAgents(query, agents);
     if (!results.length) return { content: [{ type: 'text', text: `No agents match '${query}'.` }] };
-    const list = results.map(r => `• ${r.name}${r.summary ? ' – ' +r.summary : ''}`).join('\n');
+    const list = results.map(r => `• ${r.name}${r.summary ? ' – ' + r.summary : ''}`).join('\n');
     return { content: [{ type: 'text', text: `Matches (${results.length}):\n${list}` }] };
   }
   if (name === 'apply_agent_context') {
     const agentReq = (args?.agent || '').toString().trim().toLowerCase();
-if (!agentReq) return{ content: [{ type: 'text', text: 'Agent name required.' }] };
+    if (!agentReq) return { content: [{ type: 'text', text: 'Agent name required.' }] };
     const agents = await loadAgents();
-    const match = agents.find(a => a.name.toLowerCase() === agentReq || a.file.toLowerCase() === agentReq || a.file.toLowerCase() === agentReq +'.md');
+    const match = agents.find(a => a.name.toLowerCase() === agentReq || a.file.toLowerCase() === agentReq || a.file.toLowerCase() === agentReq + '.md');
     if (!match) return { content: [{ type: 'text', text: `Agent '${agentReq}' not found.` }] };
     return { content: [{ type: 'text', text: summarizeAgent(match) }] };
   }
 
   if (name === 'troubleshoot_activation') {
-    const issue = args?.issue || 'other';
-    const platform = args?.platform || 'windows';
+    const issue = (args?.issue as string) || 'other';
+    const platform = (args?.platform as string) || 'windows';
 
     const troubleshootingGuide = getActivationTroubleshootingGuide(issue, platform);
     return { content: [{ type: 'text', text: troubleshootingGuide }] };

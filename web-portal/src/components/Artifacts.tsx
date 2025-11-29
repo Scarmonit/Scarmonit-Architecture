@@ -11,7 +11,6 @@ import {
   Search,
   Filter,
   Plus,
-  MoreVertical,
   Calendar,
   HardDrive
 } from 'lucide-react';
