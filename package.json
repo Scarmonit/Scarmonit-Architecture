@@ -13,9 +13,10 @@
   "scripts": {
     "install:all": "npm install && cd web-portal && npm install && cd ../agent-api && npm install && cd ../desktop-app && npm install",
     "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\" \"npm run dev:desktop\"",
-    "dev:web": "cd web-portal && http-server -p 8080",
+    "dev:web": "npm run dev --prefix web-portal -- --port 8080",
     "dev:api": "cd agent-api && wrangler dev",
     "dev:desktop": "cd desktop-app && npm start",
+    "dev:mcp": "npm start --prefix mcp-server",
     "deploy:all": "npm run deploy:web && npm run deploy:api",
     "deploy:web": "cd web-portal && npx wrangler pages deploy . --project-name=scarmonit-www",
     "deploy:api": "cd agent-api && wrangler deploy",
@@ -39,7 +40,8 @@
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.0",
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "vite": "^7.2.4"
   },
   "engines": {
     "node": ">=18.0.0",

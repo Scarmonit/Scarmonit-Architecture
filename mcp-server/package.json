@@ -2,15 +2,17 @@
   "name": "scarmonit-mcp-server",
   "version": "1.0.0",
   "description": "MCP Server for Scarmonit Architecture",
-  "main": "build/index.js",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "node build/index.js",
-    "dev": "ts-node src/index.ts"
+    "build": "echo 'Using JavaScript directly - no build needed'",
+    "start": "node index.js",
+    "dev": "node index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.0",
-    "zod": "^3.22.0"
+    "@modelcontextprotocol/sdk": "^0.6.1",
+    "dotenv": "^17.2.3",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -18,3 +20,4 @@
     "typescript": "^5.9.3"
   }
 }
+
