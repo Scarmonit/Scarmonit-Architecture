@@ -1,18 +1,23 @@
 {
   "name": "scarmonit-architecture",
   "version": "2.5.0",
-  "description": "Unified AI Infrastructure Architecture - Autonomous agents, edge computing, and premium UI",
+  "description": "Unified AI Infrastructure Architecture for Scarmonit",
   "private": true,
   "workspaces": [
     "web-portal",
     "agent-api",
-    "desktop-app"
+    "desktop-app",
+    "copilot-extension",
+    "mcp-server"
   ],
   "scripts": {
-    "install:all": "npm install && cd agent-api && npm install && cd .. && cd desktop-app && npm install && cd ..",
+    "start": "npm run dev:web",
+    "dev": "npm run dev:web",
+    "install:all": "npm install && cd agent-api && npm install && cd .. && cd desktop-app && npm install && cd .. && cd mcp-server && npm install && cd ..",
     "dev:web": "cd web-portal && python -m http.server 8080",
     "dev:api": "cd agent-api && npx wrangler dev",
     "dev:desktop": "cd desktop-app && npm start",
+    "dev:mcp": "cd mcp-server && npm start",
     "deploy:web": "cd web-portal && npx wrangler pages deploy . --project-name=scarmonit-www",
     "deploy:api": "cd agent-api && npx wrangler deploy --env production",
     "deploy:all": "npm run deploy:web && npm run deploy:api",
@@ -25,20 +30,19 @@
   },
   "keywords": [
     "ai",
-    "agents",
-    "cloudflare",
-    "llm",
     "infrastructure",
     "automation",
-    "edge-computing"
+    "cloudflare",
+    "workers",
+    "llm",
+    "agents"
   ],
-  "author": "Scarmonit <scarmonit@gmail.com>",
+  "author": "Scarmonit Industries <Scarmonit@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
-  },
-  "engines": {
-    "node": ">=22.0.0",
-    "npm": ">=10.0.0"
+    "concurrently": "^8.2.0",
+    "http-server": "^14.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4"
   }
 }

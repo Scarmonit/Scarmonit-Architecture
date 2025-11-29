@@ -1,314 +1,227 @@
-# Scarmonit AI Infrastructure
+# Scarmonit Architecture
 
-> **Premium AI-powered infrastructure platform with autonomous agents, LLM integration, and edge computing**
+> **Unified AI Infrastructure** - A consolidated ecosystem for autonomous AI agents, local LLM orchestration, and intelligent infrastructure management.
 
-[![Website](https://img.shields.io/badge/Website-scarmonit.com-6366f1)](https://scarmonit.com)
-[![Agent Dashboard](https://img.shields.io/badge/Dashboard-agent.scarmonit.com-8b5cf6)](https://agent.scarmonit.com)
-[![LM Studio](https://img.shields.io/badge/LM_Studio-lm.scarmonit.com-10b981)](https://lm.scarmonit.com)
+[![System Status](https://img.shields.io/badge/status-online-success)](https://scarmonit.com)
+[![Version](https://img.shields.io/badge/version-2.5.0-blue)](https://github.com/Scarmonit/Scarmonit-Architecture)
 
-## 🌟 Overview
+## 🏗️ Architecture Overview
 
-Scarmonit is a comprehensive AI infrastructure platform featuring:
-
-- 🤖 **Autonomous AI Agents** with MCP tool access
-- 🌐 **Premium Web Portal** with modern UI/UX
-- ⚡ **Edge API** via Cloudflare Workers
-- 🧠 **Local LLM** integration with LM Studio
-- 🐳 **Infrastructure Management** (Docker + Kubernetes)
-
-## 📁 Project Structure
+This repository consolidates all Scarmonit AI infrastructure components into a unified, AI CLI-friendly architecture.
 
 ```
 Scarmonit-Architecture/
-├── web-portal/          # Premium landing page (scarmonit.com)
-│   ├── index.html       # Main HTML
-│   ├── styles.css       # Modern dark theme with animations
-│   └── script.js        # Interactive features
+├── web-portal/          # Main website (scarmonit.com)
+│   ├── public/          # Static assets
+│   ├── src/             # React/HTML source
+│   └── package.json
 │
-├── agent-api/           # Cloudflare Worker (agent.scarmonit.com)
-│   ├── src/
-│   │   └── index.ts     # Worker entry point
-│   └── wrangler.toml    # Worker configuration
+├── agent-api/           # Cloudflare Worker (lm-studio-lfm2-agent)
+│   ├── src/             # Worker TypeScript code
+│   ├── wrangler.toml    # Cloudflare configuration
+│   └── package.json
 │
-├── agent-cli/           # AI Agent CLI with MCP tools
-│   ├── agent.py         # Main agent worker
-│   ├── mcp_client.py    # MCP tool interface
-│   └── README.md        # CLI documentation
+├── desktop-app/         # AI Chat Desktop Application
+│   ├── src/             # Electron/Desktop app source
+│   └── package.json
 │
-└── docs/                # Documentation
-    ├── README.md        # This file
-    ├── DEPLOYMENT.md    # Deployment guide
-    └── ARCHITECTURE.md  # System architecture
+├── docs/                # Comprehensive documentation
+│   ├── setup.md         # Setup and installation
+│   ├── deployment.md    # Deployment guides
+│   └── api.md           # API documentation
+│
+└── scripts/             # Automation and deployment scripts
+    ├── deploy-all.sh    # Deploy all components
+    ├── setup-local.sh   # Local development setup
+    └── backup.sh        # Backup configurations
 ```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+- Node.js 18+
+- Git
+- Cloudflare account (for worker deployment)
+- Netlify/Cloudflare Pages (for web deployment)
 
-- **Node.js** 22+ (for Cloudflare Workers)
-- **Python** 3.13+ (for AI agents)
-- **LM Studio** (for local LLM)
-- **Docker** + **Kubernetes** (optional, for agent tools)
-- **Wrangler CLI** (Cloudflare deployment)
+### Clone & Setup
+```bash
+# Clone the repository
+git clone https://github.com/Scarmonit/Scarmonit-Architecture.git
+cd Scarmonit-Architecture
 
-### 1. Deploy Web Portal
+# Install all dependencies
+npm run install:all
 
+# Start development environment
+npm run dev
+```
+
+## 📦 Components
+
+### 1. Web Portal (`web-portal/`)
+**Live:** [https://scarmonit.com](https://scarmonit.com)
+
+- Premium futuristic AI infrastructure landing page
+- Interactive service cards with nano-effects
+- Integrated AI chat interface
+- Responsive design
+
+**Tech Stack:** HTML, CSS, JavaScript, Cloudflare Pages
+
+### 2. Agent API (`agent-api/`)
+**Endpoint:** [https://lm.scarmonit.com](https://lm.scarmonit.com)
+
+- OpenAI-compatible API wrapper
+- Local LM Studio integration
+- Cloudflare Worker edge deployment
+- Rate limiting and authentication
+
+**Tech Stack:** TypeScript, Cloudflare Workers, Wrangler
+
+### 3. Desktop App (`desktop-app/`)
+
+- AI chat desktop application
+- Multi-LLM support (Claude, Gemini, ChatGPT)
+- Local and cloud model orchestration
+- Electron-based cross-platform
+
+**Tech Stack:** Electron, React, Node.js
+
+### 4. MCP Server & Integrations (`mcp-server/`)
+
+**Status:** Active | **Datalore Integration:** ✅ Connected
+
+Model Context Protocol (MCP) server providing AI tools and integrations:
+
+#### Features:
+- **Infrastructure Monitoring**: Real-time health checks for web and API components
+- **Documentation Query**: Intelligent search across architecture docs
+- **Datalore Cloud Integration**: Full connectivity for data science notebooks
+
+#### Datalore Cloud Setup:
+```bash
+# From project root:
+npm run dev:mcp
+```
+
+#### Available MCP Tools:
+1. `check_system_status` - Monitor infrastructure health
+2. `query_docs` - Search documentation
+3. `check_datalore_status` - Verify Datalore integration
+
+**Tech Stack:** Node.js, TypeScript, MCP SDK, Datalore Cloud API
+
+## 🔧 Development
+
+### Working with AI CLI Tools
+
+This repository is optimized for AI CLI tools like **Claude Code CLI**, **Cursor**, and **GitHub Copilot**:
+
+```bash
+# Example: Using Claude Code CLI
+code-cli --project=Scarmonit-Architecture --task="Add new API endpoint"
+
+# Example: Quick navigation
+# All components have clear entry points:
+# - web-portal/index.html
+# - agent-api/src/index.ts
+# - desktop-app/src/main.js
+```
+
+### Local Development
+
+**Web Portal:**
 ```bash
 cd web-portal
-wrangler pages deploy . --project-name=scarmonit-www
+npm install
+npm run dev
 ```
 
-### 2. Deploy Agent API
-
+**Agent API:**
 ```bash
-cd agent-api
-wrangler deploy --env production
-```
-
-### 3. Run Agent CLI
-
-```bash
-cd agent-cli
-python agent.py "List all Docker containers"
-```
-
-## 🌐 Live Endpoints
-
-| Service | URL | Purpose |
-|---------|-----|---------|
-| **Web Portal** | [scarmonit.com](https://scarmonit.com) | Public landing page |
-| **Agent Dashboard** | [agent.scarmonit.com](https://agent.scarmonit.com) | Task history & monitoring |
-| **LM Studio API** | [lm.scarmonit.com](https://lm.scarmonit.com) | Local LLM endpoint |
-
-## 🛠️ Components
-
-### Web Portal
-
-Modern, premium landing page with:
-- 🎨 Dark theme with gradients & glassmorphism
-- ✨ Smooth animations & particle effects
-- 📱 Fully responsive design
-- ⚡ Fast loading (< 2s)
-
-**Tech Stack:** HTML5, CSS3 (Custom Properties), Vanilla JavaScript
-
-### Agent API
-
-Cloudflare Worker providing:
-- 📊 Task history dashboard
-- 🔄 OpenAI-compatible API proxy
-- 💾 KV storage for task logs
-- 🌍 Edge deployment worldwide
-
-**Tech Stack:** TypeScript, Cloudflare Workers, KV Storage
-
-### Agent CLI
-
-Autonomous AI agent with:
-- 🧠 LLM integration (LM Studio)
-- 🔧 13 MCP tools (Docker, Kubernetes, Git, etc.)
-- 🔁 ReAct reasoning loop
-- 📝 Automatic task logging
-
-**Tech Stack:** Python 3.13, Requests, MCP Protocol
-
-## 🔧 MCP Tools Available
-
-The agent can use:
-
-### Infrastructure
-- `docker_ps` - List Docker containers
-- `docker_logs` - Get container logs
-- `get_pods` - List Kubernetes pods
-- `kubectl_logs` - Get pod logs
-
-### File System
-- `list_files` - Navigate directories
-- `read_file` - Read file contents
-- `write_file` - Write to files
-
-### Version Control
-- `git_status` - Repository status
-- `git_log` - Commit history
-- `git_diff` - Changes diff
-
-### General
-- `run_command` - Execute shell commands
-- `fetch_url` - HTTP requests
-- `web_search` - Web search
-
-## 📖 Documentation
-
-- [Deployment Guide](./DEPLOYMENT.md) - How to deploy all components
-- [Architecture Overview](./ARCHITECTURE.md) - System design & flow
-- [Agent CLI Guide](../agent-cli/README.md) - Using the AI agent
-- [API Reference](./API.md) - Agent API endpoints
-
-## 🎯 Usage Examples
-
-### Run Agent Task
-
-```bash
-# List Docker containers
-python agent-cli/agent.py "List all Docker containers"
-
-# Check Kubernetes pods
-python agent-cli/agent.py "List all Kubernetes pods"
-
-# File operations
-python agent-cli/agent.py "List files in /app"
-```
-
-### Access Dashboard
-
-Visit [agent.scarmonit.com](https://agent.scarmonit.com) to:
-- View recent agent tasks
-- Check task execution history
-- Monitor system status
-- View detailed logs
-
-### Use the API
-
-```bash
-# Health check
-curl https://agent.scarmonit.com/health
-
-# Get task history
-curl https://agent.scarmonit.com/api/history
-
-# Execute agent task (via OpenAI-compatible API)
-curl -X POST https://agent.scarmonit.com/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"model":"lfm2-1.2b","messages":[{"role":"user","content":"Hello"}]}'
-```
-
-## 🏗️ Architecture
-
-```mermaid
-graph TD
-    A[User] -->|HTTPS| B[scarmonit.com]
-    A -->|HTTPS| C[agent.scarmonit.com]
-    
-    B -->|Cloudflare Pages| D[Web Portal]
-    C -->|Cloudflare Worker| E[Agent API]
-    
-    E -->|Proxy| F[lm.scarmonit.com]
-    F -->|Cloudflared Tunnel| G[LM Studio:1234]
-    
-    H[Agent CLI] -->|Direct| G
-    H -->|Uses| I[MCP Tools]
-    H -->|Logs to| C
-    
-    I -->|Docker API| J[Docker]
-    I -->|kubectl| K[Kubernetes]
-    I -->|Shell| L[PowerShell]
-    
-    E -->|KV Storage| M[Task History]
-    
-    style B fill:#6366f1
-    style C fill:#8b5cf6
-    style F fill:#10b981
-    style I fill:#f59e0b
-```
-
-## 🔐 Security
-
-- ✅ All endpoints use HTTPS/TLS
-- ✅ Cloudflare WAF protection
-- ✅ API authentication with Bearer tokens
-- ✅ KV storage for sensitive data
-- ✅ Local LLM (no data leaves your machine)
-
-## 🚧 Development
-
-### Setup Development Environment
-
-```bash
-# Clone/navigate to project
-cd C:\Users\scarm\Scarmonit-Architecture
-
-# Install Node dependencies (for worker)
 cd agent-api
 npm install
-
-# Install Python dependencies (for agent)
-cd ../agent-cli
-pip install requests
-
-# Install LM Studio
-# Download from: https://lmstudio.ai
-```
-
-### Local Testing
-
-```bash
-# Test web portal locally
-cd web-portal
-python -m http.server 8000
-
-# Test worker locally
-cd agent-api
 wrangler dev
-
-# Test agent locally
-cd agent-cli
-python agent.py "test task"
 ```
 
-## 📦 Deployment
+**Desktop App:**
+```bash
+cd desktop-app
+npm install
+npm start
+```
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+## 🌐 Deployment
 
-Quick deploy:
+### Web Portal
+```bash
+cd web-portal
+# Deploy to Cloudflare Pages
+npm run deploy
+```
 
+### Agent API
+```bash
+cd agent-api
+# Deploy to Cloudflare Workers
+wrangler deploy
+```
+
+### Full Stack Deployment
 ```bash
 # Deploy everything at once
-./deploy-all.sh  # Coming soon!
+npm run deploy:all
+```
+
+## 📚 Documentation
+
+- **[Setup Guide](docs/setup.md)** - Complete setup instructions
+- **[Deployment Guide](docs/deployment.md)** - Production deployment
+- **[API Documentation](docs/api.md)** - API reference
+- **[Architecture Decisions](docs/architecture.md)** - Design decisions
+
+## 🔐 Environment Variables
+
+Create `.env` files in each component directory:
+
+```env
+# agent-api/.env
+LM_STUDIO_URL=http://localhost:1234/v1
+API_KEY=your_api_key_here
+
+# desktop-app/.env  
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 ## 🤝 Contributing
 
-This is a personal infrastructure project, but feel free to use it as inspiration!
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📝 License
+## 📄 License
 
-MIT License - See LICENSE file for details
+This project is private and proprietary to Scarmonit Industries.
 
-## 🎯 Roadmap
+## 🔗 Links
 
-- [ ] Add multi-model support to agent
-- [ ] Implement streaming responses
-- [ ] Add chat interface to dashboard
-- [ ] Deploy Terraform/AWS MCP servers
-- [ ] Add metrics & analytics
-- [ ] Create deployment automation scripts
+- **Website:** [https://scarmonit.com](https://scarmonit.com)
+- **Agent Dashboard:** [https://agent.scarmonit.com](https://agent.scarmonit.com)
+- **API Endpoint:** [https://lm.scarmonit.com](https://lm.scarmonit.com)
+- **GitHub:** [https://github.com/Scarmonit](https://github.com/Scarmonit)
 
-## 💡 Notes for AI Assistants
+## 📧 Contact
 
-This project is designed to be AI-friendly:
-
-- **Clear structure** - Each component in its own directory
-- **Comprehensive docs** - README in every folder
-- **Standard tooling** - npm, pip, wrangler
-- **Type safety** - TypeScript for Worker, type hints in Python
-- **Deployment ready** - All configs included
-
-To help with this project:
-1. Check relevant component README first
-2. Use standard commands (npm, pip, wrangler)
-3. Follow existing code style
-4. Update docs when making changes
-5. Test locally before deploying
-
-## 📞 Support
-
-For issues or questions:
-- Check [ARCHITECTURE.md](./ARCHITECTURE.md) for system design
-- Review [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment help
-- View agent logs in dashboard at [agent.scarmonit.com](https://agent.scarmonit.com)
+**Email:** Scarmonit@gmail.com
 
 ---
 
-**Built with ❤️ using AI-powered development**
-
-Last Updated: November 28, 2025
+<div align="center">
+  <strong>Built with ⚡ by Scarmonit Industries</strong>
+  <br>
+  <em>Intelligence at the Speed of Thought</em>
+</div>
