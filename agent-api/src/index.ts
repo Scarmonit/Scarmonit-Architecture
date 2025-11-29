@@ -30,6 +30,28 @@ class MockKV {
 // Singleton MockKV for local/test mode persistence
 const mockKvSingleton = new MockKV();
 
+// --- INTERFACES ---
+
+// Technology Trends Types
+interface TechnologyTrend {
+  name: string;
+  adoptionRate: number;
+  previousAdoptionRate?: number;
+  applications: string[];
+  benefits: string[];
+  concerns?: string[];
+}
+
+interface TechnologyTrendsReport {
+  id: string;
+  reportDate: string;
+  quarter: string;
+  trends: TechnologyTrend[];
+  insights: string[];
+  recommendations: string[];
+  submittedBy?: string;
+}
+
 // Define bindings
 type Bindings = {
   AGENT_CACHE: KVNamespace;
@@ -156,26 +178,6 @@ interface Insight {
   createdAt: string;
   source?: string;
   metadata?: Record<string, unknown>;
-}
-
-// Types for Technology Trends API (from PR #883)
-interface TechnologyTrend {
-  name: string;
-  adoptionRate: number;
-  previousAdoptionRate?: number;
-  applications: string[];
-  benefits: string[];
-  concerns?: string[];
-}
-
-interface TechnologyTrendsReport {
-  id: string;
-  reportDate: string;
-  quarter: string;
-  trends: TechnologyTrend[];
-  insights: string[];
-  recommendations: string[];
-  submittedBy?: string;
 }
 
 // Types for AI-powered solutions messaging (from PR #859)
@@ -1257,9 +1259,9 @@ app.get('/api/messaging/ai-solutions', (c) => {
 app.get('/api/trends/summary/latest', async (c) => {
   const list = await c.env.AGENT_CACHE.list({ prefix: 'trend:' });
   if (list.keys.length === 0) {
-    return c.json({ 
+    return c.json({
       message: 'No trend reports available',
-      summary: null 
+      summary: null
     });
   }
   
