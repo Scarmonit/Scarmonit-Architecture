@@ -184,6 +184,7 @@ npm run deploy:all
 - **[Deployment Guide](docs/deployment.md)** - Production deployment
 - **[API Documentation](docs/api.md)** - API reference
 - **[Architecture Decisions](docs/architecture.md)** - Design decisions
+- **[AI Model Deployment](docs/AI_MODEL_DEPLOYMENT.md)** - Best practices for AI model deployment
 - **[Technical Blog](docs/blog/README.md)** - Insights, tutorials, and tech deep dives
 
 ## 🔐 Environment Variables
@@ -259,13 +260,17 @@ If you're experiencing activation problems with JetBrains IDEs (IntelliJ, WebSto
 - WeChat: gejun12311
 - QQ Group: 575733084
 
-### MCP Server Issues
-If the MCP server is not working properly:
+### MCP Agent Personas Issues
+If agent personas aren't loading in Copilot Chat:
 
-**Documentation:**
-- [mcp-server/README.md](mcp-server/README.md) - MCP server setup and usage
+**Run Diagnostic:**
+```powershell
+.\mcp-server\restart-mcp.ps1
+```
 
-**Quick Check:**
-- Ensure Node.js 18+ is installed
-- Run npm install in the mcp-server directory
-- Start with npm run dev:mcp from project root
+**Test Tools:**
+```
+Run MCP tool list_agents
+```
+
+**📖 Full Guide:** [MCP_AGENT_USAGE.md](MCP_AGENT_USAGE.md)
