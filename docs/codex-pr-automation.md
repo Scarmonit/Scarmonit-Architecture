@@ -1,10 +1,11 @@
 # Codex Pull Request Automation
 
-This guide turns the manual Codex workflow (implement → test → commit → PR → self-review → squash-merge) into a repeatable script-driven process.
+This guide turns the manual Codex workflow (implement → test → commit → PR → self-review → squash-merge) into a repeatable script-driven process using standard tools (`curl`, `python3`).
 
 ## Prerequisites
 - Git is configured with write access to the repository
-- [GitHub CLI](https://cli.github.com/) installed and authenticated (`GITHUB_TOKEN` or `GH_TOKEN` in the environment) with permissions to create, review, and merge PRs
+- `GITHUB_TOKEN` or `GH_TOKEN` environment variable set with permissions to create, review, and merge PRs (repo scope)
+- `curl` and `python3` installed (for API interaction and JSON parsing)
 - Local changes ready to commit (the script stashes and reapplies them onto the working branch)
 
 ## Script
@@ -35,11 +36,11 @@ bash scripts/codex-auto-pr.sh \
 3. Runs the provided tests/checks (if any)
 4. Stages all changes and commits with the supplied message
 5. Pushes the branch to `origin`
-6. Opens a PR with the given title/body, approves it with a self-review note (unless `-R` is set), and enables auto-merge (squash + delete branch) unless `-M` is set
+6. Opens a PR via GitHub API with the given title/body, approves it with a self-review note (unless `-R` is set), and enables auto-merge (squash + delete branch) unless `-M` is set
 
 ### Notes & Safety
 - Run the script from the workspace containing your changes; it will stash and re-apply them to the new branch
 - Self-approval and squash auto-merge are enabled by default; use `-R` and/or `-M` when you need manual review or merge control
 - Auto-merge waits on branch protection rules and required checks; it will not force-merge failing PRs
 - Use descriptive commit messages and PR bodies to preserve clarity in the squashed history
-- If you need to skip auto-merge, omit the final step by running `gh pr create` manually instead of the script
+- This script does not require GitHub CLI (`gh`), making it suitable for environments where `gh` is unavailable.
