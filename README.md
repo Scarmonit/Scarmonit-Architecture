@@ -112,6 +112,10 @@ npm run dev:mcp
 
 **Tech Stack:** Node.js, TypeScript, MCP SDK, Datalore Cloud API
 
+## CI Status
+
+[![Agent API CI](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml/badge.svg?branch=Scarmonit)](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml)
+
 ## 🔧 Development
 
 ### Working with AI CLI Tools
@@ -259,12 +263,28 @@ If agent personas aren't loading in Copilot Chat:
 
 **Run Diagnostic:**
 ```powershell
-.\mcp-server\restart-mcp.ps1
+.\diagnose-copilot-mcp.ps1
 ```
 
-**Test Tools:
-```
-Run MCP tool list_agents
+**Use MCP Tools Directly:**
+```powershell
+.\use-mcp-tools.ps1
 ```
 
-**📖 Full Guide:** [MCP_AGENT_USAGE.md](MCP_AGENT_USAGE.md)
+**📖 Complete Guides:**
+- [COMPLETE_STATUS.md](COMPLETE_STATUS.md) - Current status & what's actually working
+- [COPILOT_TROUBLESHOOTING.md](COPILOT_TROUBLESHOOTING.md) - Detailed troubleshooting
+- [REALITY_CHECK.md](REALITY_CHECK.md) - What you can actually do right now
+- [MCP_COPILOT_INTEGRATION_COMPLETE.md](MCP_COPILOT_INTEGRATION_COMPLETE.md) - Original setup guide
+
+**🎯 Quick Check:**
+```
+Settings → Tools → GitHub Copilot
+Look for "Agent Mode" toggle
+```
+
+If you don't see it:
+- Check WebStorm version (need 2024.3+)
+- Update Copilot plugin (need 1.5.0+)
+- Install MCP plugin from Marketplace
+- Invalidate caches and restart
