@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Scarmonit - Next-Gen AI Infrastructure">
+    <title>Scarmonit | Future Intelligence</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="ambient-light">
+        <div class="light-orb orb-1"></div>
+        <div class="light-orb orb-2"></div>
+        <div class="light-orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">
+                <span class="logo-text">SCARMONIT</span>
+                <span class="logo-badge">BETA</span>
+            </div>
+            <div class="nav-links">
+                <a href="https://agent.scarmonit.com" class="nav-item">Agent Dashboard</a>
+                <a href="https://lm.scarmonit.com" class="nav-item">LM Studio API</a>
+                <a href="#docs" class="nav-item">Documentation</a>
+            </div>
+        </nav>
+
+        <main class="main">
+            <section class="hero">
+                <div class="hero-pill">
+                    <span></span>
+                    System Online • v2.5.0
+                </div>
+                
+                <h1 class="hero-title">
+                    Intelligence at the <br>
+                    <span class="gradient-text">Speed of Thought</span>
+                </h1>
+                
+                <p class="hero-desc">
+                    Deploy autonomous AI agents, orchestrate local LLMs, and build the next generation of intelligent infrastructure.
+                </p>
+                
+                <div class="cta-group">
+                    <a href="https://agent.scarmonit.com" class="btn btn-primary">
+                        Launch Console
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    <a href="#services" class="btn btn-glass">
+                        View Architecture
+                    </a>
+                </div>
+            </section>
+
+            <section class="grid-section" id="services">
+                <div class="card">
+                    <div class="card-icon">🤖</div>
+                    <h3>Autonomous Agents</h3>
+                    <p>Self-directed AI agents capable of complex task execution, reasoning, and tool usage.</p>
+                    <a href="https://agent.scarmonit.com" class="card-link">
+                        Open Dashboard 
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">🧠</div>
+                    <h3>Neural Neural Network</h3>
+                    <p>High-performance local inference endpoint compatible with OpenAI standards.</p>
+                    <a href="https://lm.scarmonit.com" class="card-link">
+                        Connect API
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">⚡</div>
+                    <h3>Edge Compute</h3>
+                    <p>Distributed serverless infrastructure powered by Cloudflare Workers.</p>
+                    <span class="card-link">
+                        Status: Active
+                    </span>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2025 Scarmonit Industries.</p>
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    All Systems Operational
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget">
+        <button id="chatToggle" class="chat-toggle">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+        </button>
+        
+        <div class="chat-window" id="chatWindow">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <span class="status-dot"></span>
+                    Scarmonit AI
+                </div>
+                <button id="chatClose" class="chat-close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
+                    Greetings. I am the resident AI. How may I assist your operations today?
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Command..." autocomplete="off">
+                <button id="chatSend">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

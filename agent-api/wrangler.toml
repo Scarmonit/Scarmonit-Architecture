@@ -1,0 +1,19 @@
+name = "lm-studio-lfm2-agent"
+main = "src/microservices/cloudflare-worker.ts"
+compatibility_date = "2024-01-01"
+
+[env.production]
+routes = [
+  { pattern = "agent.scarmonit.com", custom_domain = true }
+]
+
+[[env.production.kv_namespaces]]
+binding = "AGENT_CACHE"
+id = "2f3279ec01b34630ab398fa30900cb49" # Add your KV namespace ID
+
+[[env.production.kv_namespaces]]
+binding = "AGENT_HISTORY"
+id = "d64f178e0a45434ca6efbaa818e4cc30"
+
+[env.production.vars]
+LM_STUDIO_API_URL = "https://lm.scarmonit.com" # Your LM Studio API endpoint
