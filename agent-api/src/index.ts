@@ -74,6 +74,36 @@ interface CacheEntry {
   ttl: number;
 }
 
+// Types for complex problem analysis endpoint (from PR #880)
+interface AnalyzeProblemRequest {
+  description: string;
+  domain?: string;
+  stakeholders?: string[];
+  dataTypes?: string[];
+  dataSources?: string[];
+  context?: string;
+}
+
+type ProblemComplexity = 'low' | 'medium' | 'high';
+
+interface ProblemAnalysis {
+  summary: string;
+  keyInsights: string[];
+  recommendedActions: string[];
+  dataCollectionPlan: string[];
+  riskFactors: string[];
+  complexity: ProblemComplexity;
+}
+
+interface AnalyzeProblemResponse {
+  analysis: ProblemAnalysis;
+  metadata: {
+    domain: string;
+    analyzedAt: string;
+    version: string;
+  };
+}
+
 // --- CONSTANTS ---
 
 // Default cache TTL (5 minutes)
@@ -172,7 +202,8 @@ async function updateMetrics(
   const totalCacheRequests = metrics.cacheStats.hits + metrics.cacheStats.misses;
   metrics.cacheStats.hitRate = totalCacheRequests > 0
     ? metrics.cacheStats.hits / totalCacheRequests
-    : 0;
+    :
+    0;
 
   // Update error rate
   metrics.errorRate.total++;
@@ -181,7 +212,8 @@ async function updateMetrics(
   }
   metrics.errorRate.rate = metrics.errorRate.total > 0
     ? metrics.errorRate.errors / metrics.errorRate.total
-    : 0;
+    :
+    0;
 
   await cache.put('metrics:efficiency', JSON.stringify(metrics));
 }
@@ -358,6 +390,117 @@ app.post('/api/analyze', async (c) => {
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     logger.error('Analysis failure', { message: e?.message });
     return c.json({ error: ERROR_MESSAGES.ANALYSIS_FAILED, details: e?.message }, 500);
+  }
+});
+
+// 3. Analyze Complex Problem - Data Collection Specialist Agent (from PR #880)
+app.post('/api/analyze-problem', async (c) => {
+  const ai = new Ai(c.env.AI);
+  let body: AnalyzeProblemRequest;
+
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  // Validate required field
+  if (!body.description || typeof body.description !== 'string' || body.description.trim().length === 0) {
+    return c.json({ error: 'Missing required field: description' }, 400);
+  }
+
+  // Validate optional array fields
+  const arrayFields = ['stakeholders', 'dataTypes', 'dataSources'] as const;
+  for (const field of arrayFields) {
+    if (body[field] !== undefined && !Array.isArray(body[field])) {
+      return c.json({ error: `Field ${field} must be an array` }, 400);
+    }
+  }
+
+  const domain = body.domain || 'general';
+  const stakeholders = body.stakeholders?.join(', ') || 'not specified';
+  const dataTypes = body.dataTypes?.join(', ') || 'text';
+  const dataSources = body.dataSources?.join(', ') || 'not specified';
+  const additionalContext = body.context || '';
+
+  const prompt = `You are an expert data collection specialist AI agent. Analyze the following complex problem and provide a comprehensive analysis.
+
+Problem Description: ${body.description}
+Domain: ${domain}
+Stakeholders: ${stakeholders}
+Preferred Data Types: ${dataTypes}
+Data Sources: ${dataSources}
+${additionalContext ? `Additional Context: ${additionalContext}` : ''}
+
+Provide a detailed analysis in JSON format with exactly this structure:
+{
+  "summary": "Brief summary of the problem (1-2 sentences)",
+  "keyInsights": ["insight1", "insight2", "insight3"],
+  "recommendedActions": ["action1", "action2", "action3"],
+  "dataCollectionPlan": ["step1", "step2", "step3"],
+  "riskFactors": ["risk1", "risk2"],
+  "complexity": "low" | "medium" | "high"
+}
+
+Focus on:
+1. Understanding the core problem
+2. Identifying key data points needed
+3. Suggesting actionable next steps
+4. Highlighting potential risks or challenges`;
+
+  try {
+    const response = await ai.run('@cf/meta/llama-3-8b-instruct', {
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    // Extract the response text
+    const responseText = typeof response === 'object' && response !== null && 'response' in response
+      ? String(response.response)
+      : '';
+
+    // Try to parse JSON from the response
+    let analysis: ProblemAnalysis;
+    try {
+      // Try to extract JSON from the response text
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        analysis = JSON.parse(jsonMatch[0]);
+      } else {
+        // Fallback structure if no JSON found
+        analysis = {
+          summary: responseText.slice(0, 200),
+          keyInsights: ['Analysis generated - see summary'],
+          recommendedActions: ['Review the generated analysis'],
+          dataCollectionPlan: ['Gather more context about the problem'],
+          riskFactors: ['Incomplete information may affect accuracy'],
+          complexity: 'medium' as ProblemComplexity,
+        };
+      }
+    } catch {
+      // Fallback if JSON parsing fails
+      analysis = {
+        summary: responseText.slice(0, 200),
+        keyInsights: ['Analysis generated - see summary'],
+        recommendedActions: ['Review the generated analysis'],
+        dataCollectionPlan: ['Gather more context about the problem'],
+        riskFactors: ['Incomplete information may affect accuracy'],
+        complexity: 'medium' as ProblemComplexity,
+      };
+    }
+
+    const result: AnalyzeProblemResponse = {
+      analysis,
+      metadata: {
+        domain,
+        analyzedAt: new Date().toISOString(),
+        version: '1.0.0',
+      },
+    };
+
+    return c.json(result);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Problem Analysis Failed', details: errorMessage }, 500);
   }
 });
 
