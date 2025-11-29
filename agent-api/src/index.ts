@@ -117,18 +117,17 @@ When given a task:
 3. Provide analysis and recommendations
 4. Suggest concrete next steps
 
-Always respond in a structured, actionable format.`;
+Format your response with clear sections:
+- ANALYSIS: Your detailed analysis of the problem
+- RECOMMENDATIONS: Specific actionable recommendations (one per line, prefixed with "- ")
+- NEXT STEPS: Concrete next steps to take (one per line, prefixed with "- ")`;
 
   const userPrompt = `Task: ${body.task.trim()}
 ${body.context ? `\nContext: ${body.context}` : ''}
 ${body.sources && body.sources.length > 0 ? `\nSources to consider: ${body.sources.join(', ')}` : ''}
 Data type focus: ${dataType}
 
-Please analyze this problem and provide:
-1. Your analysis of the problem
-2. What data would be valuable to collect
-3. Your recommendations
-4. Suggested next steps`;
+Please analyze this problem and provide your analysis, recommendations, and suggested next steps.`;
 
   try {
     const response = await ai.run('@cf/meta/llama-3-8b-instruct', {
@@ -138,17 +137,34 @@ Please analyze this problem and provide:
       ],
     });
 
+    // Extract the response text
+    const responseText = typeof response === 'object' && response !== null && 'response' in response 
+      ? String(response.response) 
+      : JSON.stringify(response);
+
+    // Parse recommendations and next steps from the response
+    const extractListItems = (text: string, section: string): string[] => {
+      const sectionRegex = new RegExp(`${section}[:\\s]*([\\s\\S]*?)(?=(?:ANALYSIS|RECOMMENDATIONS|NEXT STEPS)[:\\s]|$)`, 'i');
+      const match = text.match(sectionRegex);
+      if (!match) return [];
+      
+      const items = match[1]
+        .split('\n')
+        .map(line => line.replace(/^[-•*]\s*/, '').trim())
+        .filter(line => line.length > 0 && line.length < 500);
+      
+      return items.slice(0, 10); // Limit to 10 items
+    };
+
     // Store the task result in KV cache
     const taskResult: AgentTaskResponse = {
       taskId,
       status: 'completed',
       result: {
-        analysis: typeof response === 'object' && response !== null && 'response' in response 
-          ? String(response.response) 
-          : JSON.stringify(response),
+        analysis: responseText,
         dataCollected: body.sources || [],
-        recommendations: [],
-        nextSteps: []
+        recommendations: extractListItems(responseText, 'RECOMMENDATIONS'),
+        nextSteps: extractListItems(responseText, 'NEXT STEPS')
       },
       timestamp: new Date().toISOString()
     };
@@ -184,7 +200,11 @@ app.get('/api/agent/task/:taskId', async (c) => {
     return c.json({ error: 'Task not found', taskId }, 404);
   }
 
-  return c.json(JSON.parse(result));
+  try {
+    return c.json(JSON.parse(result));
+  } catch {
+    return c.json({ error: 'Invalid task data', taskId }, 500);
+  }
 });
 
 // --- CRUD ENDPOINTS (Ported) ---
