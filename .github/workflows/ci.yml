@@ -43,9 +43,17 @@ jobs:
       - name: Install deps (mcp-server)
         run: npm ci --include=dev --prefix mcp-server
       - name: Test (mcp-server)
-        run: npm test --prefix mcp-server
+        run: npm test --prefix mcp-server | tee mcp-server-test.log
       - name: Validate path resolution
-        run: node mcp-server/test-resolve-root.js
+        run: node mcp-server/test-resolve-root.js | tee mcp-server-resolve.log
+      - name: Upload mcp-server logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mcp-server-logs
+          path: |
+            mcp-server-test.log
+            mcp-server-resolve.log
 
   web-portal:
     runs-on: ubuntu-latest
