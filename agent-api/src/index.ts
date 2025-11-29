@@ -27,7 +27,8 @@ app.post('/api/chat', async (c) => {
     });
     return c.json(response);
   } catch (e) {
-    return c.json({ error: 'AI Generation Failed', details: e.message }, 500);
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'AI Generation Failed', details: errorMessage }, 500);
   }
 });
 
@@ -107,6 +108,99 @@ app.get('/api/logs', async (c) => {
     if (val) logs.push(JSON.parse(val));
   }
   return c.json(logs);
+});
+
+// --- AGENT TASK REPORTS ---
+
+// Get all agent task reports
+app.get('/api/reports', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'report:' });
+  const reports = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) reports.push(JSON.parse(val));
+  }
+  return c.json(reports);
+});
+
+// Get a specific report by ID
+app.get('/api/reports/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('report:') ? id : `report:${id}`;
+  const val = await c.env.AGENT_CACHE.get(key);
+  if (!val) {
+    return c.json({ error: 'Report not found' }, 404);
+  }
+  return c.json(JSON.parse(val));
+});
+
+// Submit a new agent task report
+app.post('/api/reports', async (c) => {
+  const body = await c.req.json();
+  
+  // Validate required fields
+  if (!body.task) {
+    return c.json({ error: 'Missing required field: task' }, 400);
+  }
+  
+  const timestamp = Date.now();
+  const reportId = body.id || timestamp;
+  const id = `report:${reportId}`;
+  
+  const report = {
+    id: reportId,
+    task: body.task,
+    result: body.result || '',
+    status: body.status || 'completed',
+    agentId: body.agentId || 'autonomous-agent',
+    findings: body.findings || [],
+    recommendations: body.recommendations || [],
+    nextSteps: body.nextSteps || [],
+    metadata: body.metadata || {},
+    createdAt: new Date(timestamp).toISOString(),
+  };
+  
+  await c.env.AGENT_CACHE.put(id, JSON.stringify(report));
+  return c.json({ success: true, id: reportId, report }, 201);
+});
+
+// Update an existing report
+app.put('/api/reports/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('report:') ? id : `report:${id}`;
+  const existing = await c.env.AGENT_CACHE.get(key);
+  
+  if (!existing) {
+    return c.json({ error: 'Report not found' }, 404);
+  }
+  
+  const body = await c.req.json();
+  const existingReport = JSON.parse(existing);
+  
+  const updatedReport = {
+    ...existingReport,
+    ...body,
+    id: existingReport.id,
+    createdAt: existingReport.createdAt,
+    updatedAt: new Date().toISOString(),
+  };
+  
+  await c.env.AGENT_CACHE.put(key, JSON.stringify(updatedReport));
+  return c.json({ success: true, report: updatedReport });
+});
+
+// Delete a report
+app.delete('/api/reports/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('report:') ? id : `report:${id}`;
+  const existing = await c.env.AGENT_CACHE.get(key);
+  
+  if (!existing) {
+    return c.json({ error: 'Report not found' }, 404);
+  }
+  
+  await c.env.AGENT_CACHE.delete(key);
+  return c.json({ success: true, message: 'Report deleted' });
 });
 
 export default app;
