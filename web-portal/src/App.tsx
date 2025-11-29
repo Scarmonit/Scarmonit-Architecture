@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import './App.css'
+import { getHealthSummary, checkDockerContainers, checkKubernetesPods } from './services/mcpRouter'
 
 interface SystemStatus {
   name: string
@@ -28,6 +29,8 @@ function App() {
     { name: 'MCP Server', status: 'loading' },
     { name: 'Agent API', status: 'loading', url: 'https://agent-api.scarmonit.workers.dev' },
     { name: 'Copilot Extension', status: 'loading' },
+    { name: 'Docker', status: 'loading' },
+    { name: 'Kubernetes', status: 'loading' },
   ])
   const [time, setTime] = useState(new Date())
   const [commits] = useState<Commit[]>([
@@ -39,71 +42,45 @@ function App() {
   ])
   const [deployment, setDeployment] = useState<DeploymentStatus>({ isDeploying: false })
   const [logs, setLogs] = useState<string[]>([])
+  const [isDarkMode, setIsDarkMode] = useState(true)
 
-  const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString()
-    setLogs(prev => [`[${timestamp}] ${message}`, ...prev.slice(0, 9)])
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode)
   }
 
-  const checkHealth = useCallback(async (name: string, url?: string): Promise<SystemStatus> => {
-    const start = Date.now()
-    try {
-      if (url && url.startsWith('http')) {
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 5000)
-
-        try {
-          await fetch(url, {
-            mode: 'no-cors',
-            signal: controller.signal
-          })
-          clearTimeout(timeout)
-          return {
-            name,
-            status: 'online',
-            url,
-            responseTime: Date.now() - start,
-            lastChecked: new Date()
-          }
-        } catch {
-          clearTimeout(timeout)
-          return { name, status: 'offline', url, lastChecked: new Date() }
-        }
-      }
-      // For services without URLs, simulate check
-      await new Promise(r => setTimeout(r, 200 + Math.random() * 300))
-      return {
-        name,
-        status: 'online',
-        responseTime: Date.now() - start,
-        lastChecked: new Date()
-      }
-    } catch {
-      return { name, status: 'offline', url, lastChecked: new Date() }
-    }
+  const addLog = useCallback((message: string) => {
+    const timestamp = new Date().toLocaleTimeString()
+    setLogs(prev => [`[${timestamp}] ${message}`, ...prev.slice(0, 9)])
   }, [])
 
   const runHealthChecks = useCallback(async () => {
     addLog('Starting health checks...')
     setSystems(prev => prev.map(s => ({ ...s, status: 'loading' as const })))
 
-    const checks = await Promise.all([
-      checkHealth('Web Portal', window.location.href),
-      checkHealth('MCP Server'),
-      checkHealth('Agent API', 'https://agent.scarmonit.com'),
-      checkHealth('Copilot Extension'),
-    ])
+    try {
+      const summary = await getHealthSummary()
+      const checks: SystemStatus[] = [
+        { name: 'Web Portal', status: 'online', url: window.location.href, lastChecked: new Date() },
+        { name: 'MCP Server', status: summary.web.includes('Online') || summary.api.includes('Online') ? 'online' : 'offline', lastChecked: new Date() },
+        { name: 'Agent API', status: summary.api.includes('Online') ? 'online' : 'offline', url: 'https://agent-api.scarmonit.workers.dev', lastChecked: new Date() },
+        { name: 'Copilot Extension', status: 'online', lastChecked: new Date() },
+        { name: 'Docker', status: 'loading', lastChecked: new Date() },
+        { name: 'Kubernetes', status: 'loading', lastChecked: new Date() },
+      ]
 
-    setSystems(checks)
-    const onlineCount = checks.filter(c => c.status === 'online').length
-    addLog(`Health check complete: ${onlineCount}/${checks.length} services online`)
-  }, [checkHealth])
+      setSystems(checks)
+      const onlineCount = checks.filter(c => c.status === 'online').length
+      addLog(`Health check complete: ${onlineCount}/${checks.length} services online`)
+    } catch (e) {
+      addLog(`Health checks failed: ${(e as Error).message}`)
+    }
+  }, [addLog])
 
   const triggerDeployment = async (target: 'web' | 'api' | 'all') => {
     setDeployment({ isDeploying: true, environment: target })
     addLog(`Triggering deployment: ${target}...`)
 
-    // Simulate deployment
+    // Simulate deployment (TODO: integrate with actual MCP deployment tools)
     await new Promise(r => setTimeout(r, 2000))
 
     const timestamp = new Date().toISOString()
@@ -121,9 +98,8 @@ function App() {
   }, [])
 
   useEffect(() => {
+    // Run initial health checks on mount
     runHealthChecks()
-    const interval = setInterval(runHealthChecks, 30000) // Check every 30s
-    return () => clearInterval(interval)
   }, [runHealthChecks])
 
   const getStatusColor = (status: string) => {
@@ -137,10 +113,13 @@ function App() {
   const totalOnline = systems.filter(s => s.status === 'online').length
 
   return (
-    <div className="app">
+    <div className={`app ${!isDarkMode ? 'light-mode' : ''}`}>
       <header className="header">
         <h1>Scarmonit Control Center</h1>
         <div className="header-right">
+          <button className="theme-toggle" onClick={toggleTheme} title="Toggle Theme">
+            {isDarkMode ? '🌙' : '☀️'}
+          </button>
           <span className={`health-badge ${totalOnline === systems.length ? 'healthy' : 'degraded'}`}>
             {totalOnline}/{systems.length} Online
           </span>
@@ -192,6 +171,21 @@ function App() {
             >
               {deployment.isDeploying && deployment.environment === 'all' ? 'Deploying...' : 'Deploy All'}
             </button>
+          </div>
+          <div className="devops-tools">
+            <h3>DevOps Tools</h3>
+            <div className="devops-grid">
+              <button className="deploy-btn" onClick={async () => {
+                addLog('Checking Docker containers...')
+                const output = await checkDockerContainers()
+                addLog(output)
+              }}>Docker PS</button>
+              <button className="deploy-btn" onClick={async () => {
+                addLog('Checking Kubernetes pods...')
+                const output = await checkKubernetesPods('default')
+                addLog(output)
+              }}>K8s Pods</button>
+            </div>
           </div>
           {deployment.lastDeployment && (
             <p className="last-deploy">Last deployment: {new Date(deployment.lastDeployment).toLocaleString()}</p>

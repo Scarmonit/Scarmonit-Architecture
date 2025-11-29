@@ -1,3 +1,25 @@
+:root {
+  --bg-gradient-start: #0f172a;
+  --bg-gradient-end: #1e293b;
+  --text-color: #e2e8f0;
+  --card-bg: rgba(30, 41, 59, 0.6);
+  --card-border: #334155;
+  --header-bg: rgba(15, 23, 42, 0.8);
+  --commit-bg: rgba(15, 23, 42, 0.5);
+  --log-bg: rgba(15, 23, 42, 0.8);
+}
+
+.light-mode {
+  --bg-gradient-start: #f8fafc;
+  --bg-gradient-end: #e2e8f0;
+  --text-color: #1e293b;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-border: #cbd5e1;
+  --header-bg: rgba(255, 255, 255, 0.9);
+  --commit-bg: rgba(255, 255, 255, 0.6);
+  --log-bg: rgba(241, 245, 249, 0.9);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -6,9 +28,29 @@
 
 .app {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  color: #e2e8f0;
+  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  color: var(--text-color);
   font-family: 'Segoe UI', system-ui, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-color);
+  padding: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
 }
 
 .header {
@@ -16,8 +58,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  background: rgba(15, 23, 42, 0.8);
-  border-bottom: 1px solid #334155;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--card-border);
   backdrop-filter: blur(10px);
   position: sticky;
   top: 0;

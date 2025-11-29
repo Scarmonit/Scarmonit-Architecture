@@ -225,3 +225,46 @@ This project is private and proprietary to Scarmonit Industries.
   <br>
   <em>Intelligence at the Speed of Thought</em>
 </div>
+
+## 🛠️ Troubleshooting & Support
+
+### JetBrains IDE Activation Issues
+If you're experiencing activation problems with JetBrains IDEs (IntelliJ, WebStorm, PyCharm, etc.):
+
+**Run Diagnostic Tool:**
+```powershell
+.\diagnose-activation.ps1
+```
+
+**Common Issues:**
+- Activation fails with corrupted data or DnsFilter error
+- ja-netfilter blocking brucege.com
+- Cannot access activation server
+- Mac "Permission denied" error
+
+**Quick Fixes:**
+- Update plugin to latest version
+- Edit ja-netfilter DNS config if installed
+- Use offline activation if network blocked
+- Fix permissions on Mac: `sudo chmod 777 ~/.config`
+
+**📖 Full Guide:** [docs/JETBRAINS_ACTIVATION_GUIDE.md](docs/JETBRAINS_ACTIVATION_GUIDE.md)
+
+**Support Channels:**
+- WeChat: gejun12311
+- QQ Group: 575733084
+
+### MCP Agent Personas Issues
+If agent personas aren't loading in Copilot Chat:
+
+**Run Diagnostic:**
+```powershell
+.\mcp-server\restart-mcp.ps1
+```
+
+**Test Tools:
+```
+Run MCP tool list_agents
+```
+
+**📖 Full Guide:** [MCP_AGENT_USAGE.md](MCP_AGENT_USAGE.md)

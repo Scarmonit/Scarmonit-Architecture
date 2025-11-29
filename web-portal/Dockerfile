@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (using npm install to generate lockfile if missing)
 COPY package*.json ./
 RUN npm install
 
