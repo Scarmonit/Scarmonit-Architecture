@@ -31,9 +31,9 @@ Scarmonit-Architecture/
 │   └── api.md           # API documentation
 │
 └── scripts/             # Automation and deployment scripts
-    ├── deploy-all.sh    # Deploy all components
-    ├── setup-local.sh   # Local development setup
-    └── backup.sh        # Backup configurations
+    ├── START_DASHBOARD.sh    # Start dashboard (Linux/Mac)
+    ├── START_DASHBOARD.bat   # Start dashboard (Windows)
+    └── diagnose-activation.ps1  # JetBrains diagnostic
 ```
 
 ## 🚀 Quick Start
@@ -112,6 +112,10 @@ npm run dev:mcp
 
 **Tech Stack:** Node.js, TypeScript, MCP SDK, Datalore Cloud API
 
+## CI Status
+
+[![Agent API CI](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml/badge.svg?branch=Scarmonit)](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml)
+
 ## 🔧 Development
 
 ### Working with AI CLI Tools
@@ -180,6 +184,8 @@ npm run deploy:all
 - **[Deployment Guide](docs/deployment.md)** - Production deployment
 - **[API Documentation](docs/api.md)** - API reference
 - **[Architecture Decisions](docs/architecture.md)** - Design decisions
+- **[AI Model Deployment](docs/AI_MODEL_DEPLOYMENT.md)** - Best practices for AI model deployment
+- **[Technical Blog](docs/blog/README.md)** - Insights, tutorials, and tech deep dives
 
 ## 🔐 Environment Variables
 
@@ -233,7 +239,7 @@ If you're experiencing activation problems with JetBrains IDEs (IntelliJ, WebSto
 
 **Run Diagnostic Tool:**
 ```powershell
-.\diagnose-activation.ps1
+./scripts/diagnose-activation.ps1
 ```
 
 **Common Issues:**
