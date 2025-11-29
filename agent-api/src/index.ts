@@ -369,7 +369,7 @@ app.post('/api/chat', async (c) => {
   let body: any; 
   try { 
     body = await c.req.json(); 
-  } catch {
+  } catch { 
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
@@ -435,7 +435,7 @@ app.post('/api/analyze', async (c) => {
   let body: any; 
   try { 
     body = await c.req.json(); 
-  } catch {
+  } catch { 
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
