@@ -225,6 +225,13 @@ app.post('/api/research/analyze', async (c) => {
     }
 
     // Calculate relevance score based on methodology category
+    // Scores reflect research methodology effectiveness based on current AI/ML trends:
+    // - big-data (92): Highest potential for AI integration and pattern recognition
+    // - longitudinal (90): Strong for tracking long-term self-improvement outcomes
+    // - mhealth (88): Good accessibility and data collection capabilities
+    // - mixed-methods (85): Comprehensive but requires more coordination
+    // - experimental (75): Traditional approach, limited AI integration potential
+    // - observational (70): Baseline score, limited intervention capability
     const categoryScores: Record<MethodologyCategory, number> = {
       'mixed-methods': 85,
       'longitudinal': 90,
@@ -235,7 +242,9 @@ app.post('/api/research/analyze', async (c) => {
     };
 
     const baseScore = categoryScores[methodology.category as MethodologyCategory] || 70;
+    // AI integration adds 5 points (max) as it aligns with optimization proposals
     const aiBonus = methodology.aiIntegration ? 5 : 0;
+    // Each contextual factor adds 1 point (max 3) for comprehensive analysis
     const contextBonus = methodology.contextualFactors?.length ? 
       Math.min(methodology.contextualFactors.length, 3) : 0;
 
@@ -255,7 +264,7 @@ app.post('/api/research/analyze', async (c) => {
 
     const result: ResearchAnalysisResult = {
       methodology: {
-        id: methodology.id || `method-${Date.now()}`,
+        id: methodology.id || `method-${crypto.randomUUID()}`,
         name: methodology.name,
         category: methodology.category as MethodologyCategory,
         description: methodology.description || '',
@@ -269,8 +278,8 @@ app.post('/api/research/analyze', async (c) => {
       overallScore
     };
 
-    // Store analysis result for future reference
-    const analysisId = `research:${Date.now()}`;
+    // Store analysis result for future reference using crypto.randomUUID() for collision-safe IDs
+    const analysisId = `research:${crypto.randomUUID()}`;
     await c.env.AGENT_CACHE.put(analysisId, JSON.stringify(result));
 
     return c.json(result);
