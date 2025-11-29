@@ -109,6 +109,112 @@ Response:
 }
 ```
 
+### Autonomous Agent Task Management
+
+The Agent API supports autonomous agent workflows including task submission, complex problem analysis, and agent clarification requests.
+
+#### Submit Task
+
+Submit a task with context for an autonomous agent:
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/tasks
+Content-Type: application/json
+
+{
+  "task": "Analyze market trends in healthcare AI",
+  "domain": "healthcare",
+  "stakeholders": ["hospitals", "patients", "insurance"],
+  "dataTypes": ["text", "spreadsheets"],
+  "additionalContext": "Focus on diagnostic AI solutions"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "taskId": "task:1732889123456",
+  "message": "Task submitted successfully",
+  "status": "pending"
+}
+```
+
+#### List Tasks
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/tasks
+```
+
+#### Get Task Status
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/tasks/:taskId
+```
+
+#### Analyze Complex Problem
+
+Submit a complex problem for AI analysis with full domain context:
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/analyze-complex
+Content-Type: application/json
+
+{
+  "task": "Evaluate the feasibility of implementing blockchain for medical records",
+  "domain": "healthcare",
+  "stakeholders": ["hospitals", "patients", "regulators"],
+  "dataTypes": ["text", "urls"],
+  "sourceUrl": "https://example.com/research",
+  "additionalContext": "Consider HIPAA compliance requirements"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "taskId": "task:1732889123456",
+  "analysis": "...",
+  "data_requirements": ["patient consent data", "existing system architecture"],
+  "recommended_sources": ["CMS.gov", "academic papers"],
+  "risk_assessment": "medium",
+  "complexity_score": 7,
+  "next_steps": ["stakeholder interviews", "technical feasibility study"],
+  "clarification_questions": ["What is the current EMR system?"]
+}
+```
+
+#### Agent Clarification Request
+
+Handle agent feedback loops when more context is needed:
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/tasks/:taskId/clarify
+Content-Type: application/json
+
+{
+  "domain": "technology",
+  "stakeholders": ["developers", "operations"],
+  "additionalContext": "Primary focus is on scalability"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Task updated with clarification",
+  "task": {
+    "taskId": "task:1732889123456",
+    "status": "in_progress",
+    "domain": "technology",
+    "stakeholders": ["developers", "operations"],
+    "lastUpdated": "2025-11-29T13:52:00.000Z"
+  }
+}
+```
+
 ## Configuration
 
 ### Environment Variables
