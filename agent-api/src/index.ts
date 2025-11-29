@@ -158,6 +158,26 @@ interface Insight {
   metadata?: Record<string, unknown>;
 }
 
+// Types for Technology Trends API (from PR #883)
+interface TechnologyTrend {
+  name: string;
+  adoptionRate: number;
+  previousAdoptionRate?: number;
+  applications: string[];
+  benefits: string[];
+  concerns?: string[];
+}
+
+interface TechnologyTrendsReport {
+  id: string;
+  reportDate: string;
+  quarter: string;
+  trends: TechnologyTrend[];
+  insights: string[];
+  recommendations: string[];
+  submittedBy?: string;
+}
+
 // Types for AI-powered solutions messaging (from PR #859)
 interface KeyMessage {
   id: number;
@@ -266,7 +286,7 @@ async function updateMetrics(
 
   // Update processing time
   const newCount = metrics.processingTime.count + 1;
-  metrics.processingTime.average = 
+  metrics.processingTime.average =
     (metrics.processingTime.average * metrics.processingTime.count + processingTime) / newCount;
   metrics.processingTime.count = newCount;
   metrics.processingTime.lastUpdated = new Date().toISOString();
@@ -1229,6 +1249,102 @@ app.get('/api/messaging/ai-solutions', (c) => {
   };
 
   return c.json(messaging);
+});
+
+// --- TECHNOLOGY TRENDS ENDPOINTS (from PR #883) ---
+
+// Get the latest technology trends summary
+app.get('/api/trends/summary/latest', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'trend:' });
+  if (list.keys.length === 0) {
+    return c.json({ 
+      message: 'No trend reports available',
+      summary: null 
+    });
+  }
+  
+  // Get the most recent report by extracting numeric timestamp from key
+  const sortedKeys = list.keys.sort((a, b) => {
+    const aId = a.name.replace('trend:', '');
+    const bId = b.name.replace('trend:', '');
+    const aNum = parseInt(aId, 10);
+    const bNum = parseInt(bId, 10);
+    // If both are numeric timestamps, sort numerically (descending)
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return bNum - aNum;
+    }
+    // Fallback to string comparison
+    return b.name.localeCompare(a.name);
+  });
+  const latestKey = sortedKeys[0];
+  const val = await c.env.AGENT_CACHE.get(latestKey.name);
+  
+  if (!val) {
+    return c.json({ error: 'Failed to retrieve latest trend report' }, 500);
+  }
+  
+  const report = JSON.parse(val) as TechnologyTrendsReport;
+  
+  // Create a summary
+  const summary = {
+    reportId: report.id,
+    reportDate: report.reportDate,
+    quarter: report.quarter,
+    topTrends: report.trends.slice(0, 5).map(t => ({
+      name: t.name,
+      adoptionRate: t.adoptionRate
+    })),
+    keyInsights: report.insights.slice(0, 3),
+    submittedBy: report.submittedBy
+  };
+  
+  return c.json(summary);
+});
+
+// Get all technology trends reports
+app.get('/api/trends', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'trend:' });
+  const trends: TechnologyTrendsReport[] = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) trends.push(JSON.parse(val) as TechnologyTrendsReport);
+  }
+  return c.json(trends);
+});
+
+// Get a specific technology trends report by ID
+app.get('/api/trends/:id', async (c) => {
+  const id = c.req.param('id');
+  const val = await c.env.AGENT_CACHE.get(`trend:${id}`);
+  if (!val) {
+    return c.json({ error: 'Trend report not found' }, 404);
+  }
+  return c.json(JSON.parse(val) as TechnologyTrendsReport);
+});
+
+// Submit a new technology trends report
+app.post('/api/trends', async (c) => {
+  const body = await c.req.json();
+  
+  // Validate required fields
+  if (!body.trends || !Array.isArray(body.trends)) {
+    return c.json({ error: 'Invalid request: trends array is required' }, 400);
+  }
+  
+  // Generate unique ID using timestamp + random suffix to avoid collisions
+  const reportId = body.id || `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  const report: TechnologyTrendsReport = {
+    id: reportId,
+    reportDate: body.reportDate || new Date().toISOString(),
+    quarter: body.quarter || `Q${Math.ceil((new Date().getMonth() + 1) / 3)} ${new Date().getFullYear()}`,
+    trends: body.trends,
+    insights: body.insights || [],
+    recommendations: body.recommendations || [],
+    submittedBy: body.submittedBy || 'Autonomous Agent'
+  };
+  
+  await c.env.AGENT_CACHE.put(`trend:${reportId}`, JSON.stringify(report));
+  return c.json({ success: true, id: reportId, report });
 });
 
 export default app;
