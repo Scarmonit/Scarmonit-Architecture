@@ -7,7 +7,7 @@ log() {
 
 usage() {
   cat <<'USAGE'
-Automate PR creation, self-review, and squash merge using GitHub CLI.
+Automate PR creation, self-review, and squash merge using GitHub API (curl).
 
 Usage:
   codex-auto-pr.sh [-b base_branch] [-m commit_message] [-t pr_title] [-d pr_body_file] [-r test_command] [-R skip_review] [-M skip_auto_merge] branch_name
@@ -23,8 +23,11 @@ Options:
   -h  Show this help message
 
   Requirements:
-    - GitHub CLI installed and authenticated with a token that can open, review, and merge PRs
-    - Local changes present; the script stashes and reapplies them to the working branch
+    - GITHUB_TOKEN or GH_TOKEN environment variable set
+    - curl installed
+    - git installed
+    - python3 installed (for JSON parsing)
+    - Local changes present
 USAGE
 }
 
@@ -65,19 +68,34 @@ fi
 
 BRANCH_NAME="$1"
 
-if ! command -v git >/dev/null 2>&1; then
-  echo "git is required" >&2
-  exit 1
-fi
-
-if ! command -v gh >/dev/null 2>&1; then
-  echo "GitHub CLI (gh) is required" >&2
-  exit 1
-fi
+# Check requirements
+for cmd in git curl python3; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "$cmd is required" >&2
+    exit 1
+  fi
+done
 
 if [ -z "${GITHUB_TOKEN:-${GH_TOKEN:-}}" ]; then
-  echo "GITHUB_TOKEN or GH_TOKEN must be set for GitHub CLI" >&2
+  echo "GITHUB_TOKEN or GH_TOKEN must be set" >&2
   exit 1
+fi
+
+TOKEN="${GITHUB_TOKEN:-${GH_TOKEN}}"
+
+# Get Repo Info
+REMOTE_URL=$(git remote get-url origin)
+# Handle ssh and https urls
+# git@github.com:Owner/Repo.git -> Owner/Repo
+# https://github.com/Owner/Repo.git -> Owner/Repo
+# https://github.com/Owner/Repo -> Owner/Repo
+REPO_FULL_NAME=$(echo "$REMOTE_URL" | sed -E 's/.*github\.com[:\/](.*)(\.git)?/\1/' | sed 's/\.git$//')
+
+log "Detected Repository: $REPO_FULL_NAME"
+
+if [ -z "$REPO_FULL_NAME" ]; then
+    echo "Could not detect repository name from remote URL" >&2
+    exit 1
 fi
 
 if git diff --quiet && git diff --cached --quiet; then
@@ -140,26 +158,68 @@ fi
 
 DEFAULT_BODY="Automated PR created by codex-auto-pr.sh.\n\n- Commit: ${COMMIT_MESSAGE}\n- Branch: ${BRANCH_NAME}\n- Base: ${BASE_BRANCH}\n- Tests: ${RUN_TESTS_CMD:-not specified}\n"
 
+BODY_CONTENT=""
 if [ -n "$PR_BODY_FILE" ]; then
-  PR_CREATE_ARGS=(--title "$PR_TITLE" --body-file "$PR_BODY_FILE")
+  if [ -f "$PR_BODY_FILE" ]; then
+      BODY_CONTENT=$(cat "$PR_BODY_FILE")
+  else
+      echo "PR Body file not found: $PR_BODY_FILE" >&2
+      exit 1
+  fi
 else
-  PR_CREATE_ARGS=(--title "$PR_TITLE" --body "$DEFAULT_BODY")
+  BODY_CONTENT="$DEFAULT_BODY"
 fi
 
-log "Creating pull request"
-PR_URL=$(gh pr create "${PR_CREATE_ARGS[@]}" --base "$BASE_BRANCH" --head "$BRANCH_NAME")
+log "Creating pull request via API"
+
+# Using python to construct the JSON payload
+JSON_PAYLOAD=$(python3 -c "import sys, json; print(json.dumps({'title': sys.argv[1], 'body': sys.argv[2], 'head': sys.argv[3], 'base': sys.argv[4]}))" "$PR_TITLE" "$BODY_CONTENT" "$BRANCH_NAME" "$BASE_BRANCH")
+
+RESPONSE=$(curl -s -X POST -H "Authorization: token $TOKEN" \
+  -H "Accept: application/vnd.github.v3+json" \
+  -d "$JSON_PAYLOAD" \
+  "https://api.github.com/repos/$REPO_FULL_NAME/pulls")
+
+# Extract info
+PR_INFO=$(echo "$RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(f'{data.get(\"number\", \"\")}|{data.get(\"node_id\", \"\")}')")
+PR_NUMBER=$(echo "$PR_INFO" | cut -d'|' -f1)
+NODE_ID=$(echo "$PR_INFO" | cut -d'|' -f2)
+
+if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" == "None" ]; then
+    echo "Failed to create PR. Response:"
+    echo "$RESPONSE"
+    exit 1
+fi
+
+log "PR Created: #$PR_NUMBER (Node ID: $NODE_ID)"
+PR_URL="https://github.com/$REPO_FULL_NAME/pull/$PR_NUMBER"
+log "PR URL: $PR_URL"
 
 if [ "$AUTO_REVIEW" -eq 1 ]; then
   log "Approving pull request with self-review"
   REVIEW_BODY="Self-review by automation. Verified commit: ${COMMIT_MESSAGE}. Tests: ${RUN_TESTS_CMD:-not specified}."
-  gh pr review "$PR_URL" --approve --body "$REVIEW_BODY"
+
+  REVIEW_PAYLOAD=$(python3 -c "import sys, json; print(json.dumps({'event': 'APPROVE', 'body': sys.argv[1]}))" "$REVIEW_BODY")
+
+  curl -s -X POST -H "Authorization: token $TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    -d "$REVIEW_PAYLOAD" \
+    "https://api.github.com/repos/$REPO_FULL_NAME/pulls/$PR_NUMBER/reviews" >/dev/null
 else
   log "Skipping self-review (per -R flag)"
 fi
 
 if [ "$AUTO_MERGE" -eq 1 ]; then
   log "Enabling auto-merge (squash)"
-  gh pr merge "$PR_URL" --squash --delete-branch --auto
+
+  GRAPHQL_QUERY="mutation { enablePullRequestAutoMerge(input: { pullRequestId: \"$NODE_ID\", mergeMethod: SQUASH }) { pullRequest { autoMergeRequest { enabledAt } } } }"
+
+  GRAPHQL_PAYLOAD=$(python3 -c "import sys, json; print(json.dumps({'query': sys.argv[1]}))" "$GRAPHQL_QUERY")
+
+  curl -s -X POST -H "Authorization: token $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "$GRAPHQL_PAYLOAD" \
+     "https://api.github.com/graphql" >/dev/null
 else
   log "Skipping auto-merge (per -M flag)"
 fi
