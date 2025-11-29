@@ -144,8 +144,19 @@ app.get('/api/trends/summary/latest', async (c) => {
     });
   }
   
-  // Get the most recent report (assuming IDs are timestamp-based)
-  const sortedKeys = list.keys.sort((a, b) => b.name.localeCompare(a.name));
+  // Get the most recent report by extracting numeric timestamp from key
+  const sortedKeys = list.keys.sort((a, b) => {
+    const aId = a.name.replace('trend:', '');
+    const bId = b.name.replace('trend:', '');
+    const aNum = parseInt(aId, 10);
+    const bNum = parseInt(bId, 10);
+    // If both are numeric timestamps, sort numerically (descending)
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return bNum - aNum;
+    }
+    // Fallback to string comparison
+    return b.name.localeCompare(a.name);
+  });
   const latestKey = sortedKeys[0];
   const val = await c.env.AGENT_CACHE.get(latestKey.name);
   
@@ -201,7 +212,8 @@ app.post('/api/trends', async (c) => {
     return c.json({ error: 'Invalid request: trends array is required' }, 400);
   }
   
-  const reportId = body.id || `${Date.now()}`;
+  // Generate unique ID using timestamp + random suffix to avoid collisions
+  const reportId = body.id || `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
   const report: TechnologyTrendsReport = {
     id: reportId,
     reportDate: body.reportDate || new Date().toISOString(),
