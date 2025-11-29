@@ -141,3 +141,5 @@ vite.config.ts.timestamp-*
 # Python virtual environment
 venv/
 
+# Wrangler cache
+.wrangler/
