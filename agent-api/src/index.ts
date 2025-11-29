@@ -2,6 +2,9 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import type { Env, ChatMessage, ChatRequestBody, AnalyzeRequestBody, Agent, Artifact } from '../worker-configuration.d'
 
+// Constants
+const DEFAULT_AI_MODEL = '@cf/meta/llama-3-8b-instruct'
+
 // Define Hono bindings using shared Env type
 type Bindings = Env
 
@@ -69,7 +72,7 @@ app.post('/api/chat', async (c) => {
   ]
 
   try {
-    const response = await c.env.AI.run('@cf/meta/llama-3-8b-instruct', {
+    const response = await c.env.AI.run(DEFAULT_AI_MODEL, {
       messages,
     })
     return c.json(response)
@@ -112,7 +115,7 @@ app.post('/api/analyze', async (c) => {
   `
 
   try {
-    const response = await c.env.AI.run('@cf/meta/llama-3-8b-instruct', {
+    const response = await c.env.AI.run(DEFAULT_AI_MODEL, {
       messages: [{ role: 'user', content: prompt }],
     })
     return c.json(response)
