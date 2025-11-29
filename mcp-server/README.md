@@ -77,20 +77,6 @@ Datalore Cloud is properly configured and ready for notebook connectivity.
 The server is already configured in your GitHub Copilot MCP settings at:
 `C:\Users\scarm\AppData\Local\github-copilot\intellij\mcp.json`
 
-## Available Tools
-
-### check_system_status
-Checks the health of Scarmonit infrastructure components.
-
-Parameters:
-- `component` (enum): "web", "api", or "all" (default: "all")
-
-### query_docs
-Retrieves architectural documentation.
-
-Parameters:
-- `query` (string): The topic to search for
-
 ## Troubleshooting
 
 If you see module not found errors:
