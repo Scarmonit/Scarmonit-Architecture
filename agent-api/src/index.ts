@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Hono, Context } from 'hono'
 import { cors } from 'hono/cors'
 import { Ai } from '@cloudflare/ai'
 
@@ -18,21 +18,37 @@ interface AnalyzeRequestBody {
   type: string
 }
 
-interface AgentBody {
+// Type definitions for stored entities
+interface StoredAgent {
   id?: string | number
+  name?: string
+  description?: string
   [key: string]: unknown
 }
 
-interface ArtifactBody {
+interface StoredArtifact {
   id?: string | number
+  name?: string
+  type?: string
+  content?: unknown
   [key: string]: unknown
 }
 
-// Define bindings
+interface StoredLog {
+  id?: string | number
+  level?: string
+  message?: string
+  timestamp?: string
+  [key: string]: unknown
+}
+
+// Define bindings - using 'any' for AI as per Cloudflare Workers AI SDK
 type Bindings = {
   AGENT_CACHE: KVNamespace
-  AI: Fetcher // Workers AI binding
+  AI: any // Workers AI binding (SDK uses 'any' internally)
 }
+
+type AppContext = Context<{ Bindings: Bindings }>
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -40,7 +56,7 @@ const app = new Hono<{ Bindings: Bindings }>()
 app.use('*', cors())
 
 // Helper function for safe JSON parsing
-async function safeParseJson<T>(c: { req: { json: () => Promise<T> } }): Promise<{ success: true; data: T } | { success: false; error: string }> {
+async function safeParseJson<T>(c: AppContext): Promise<{ success: true; data: T } | { success: false; error: string }> {
   try {
     const data = await c.req.json() as T
     return { success: true, data }
@@ -127,10 +143,10 @@ app.get('/health', (c) => c.json({ status: 'healthy' }))
 app.get('/api/agents', async (c) => {
   try {
     const list = await c.env.AGENT_CACHE.list({ prefix: 'agent:' })
-    const agents: unknown[] = []
+    const agents: StoredAgent[] = []
     for (const key of list.keys) {
       const val = await c.env.AGENT_CACHE.get(key.name)
-      if (val) agents.push(JSON.parse(val))
+      if (val) agents.push(JSON.parse(val) as StoredAgent)
     }
     return c.json(agents)
   } catch (e: unknown) {
@@ -139,7 +155,7 @@ app.get('/api/agents', async (c) => {
 })
 
 app.post('/api/agents', async (c) => {
-  const parseResult = await safeParseJson<AgentBody>(c)
+  const parseResult = await safeParseJson<StoredAgent>(c)
   if (!parseResult.success) {
     return c.json({ error: 'Bad Request', details: parseResult.error }, 400)
   }
@@ -158,10 +174,10 @@ app.post('/api/agents', async (c) => {
 app.get('/api/artifacts', async (c) => {
   try {
     const list = await c.env.AGENT_CACHE.list({ prefix: 'artifact:' })
-    const artifacts: unknown[] = []
+    const artifacts: StoredArtifact[] = []
     for (const key of list.keys) {
       const val = await c.env.AGENT_CACHE.get(key.name)
-      if (val) artifacts.push(JSON.parse(val))
+      if (val) artifacts.push(JSON.parse(val) as StoredArtifact)
     }
     return c.json(artifacts)
   } catch (e: unknown) {
@@ -170,7 +186,7 @@ app.get('/api/artifacts', async (c) => {
 })
 
 app.post('/api/artifacts', async (c) => {
-  const parseResult = await safeParseJson<ArtifactBody>(c)
+  const parseResult = await safeParseJson<StoredArtifact>(c)
   if (!parseResult.success) {
     return c.json({ error: 'Bad Request', details: parseResult.error }, 400)
   }
@@ -189,10 +205,10 @@ app.post('/api/artifacts', async (c) => {
 app.get('/api/logs', async (c) => {
   try {
     const list = await c.env.AGENT_CACHE.list({ prefix: 'log:' })
-    const logs: unknown[] = []
+    const logs: StoredLog[] = []
     for (const key of list.keys) {
       const val = await c.env.AGENT_CACHE.get(key.name)
-      if (val) logs.push(JSON.parse(val))
+      if (val) logs.push(JSON.parse(val) as StoredLog)
     }
     return c.json(logs)
   } catch (e: unknown) {
