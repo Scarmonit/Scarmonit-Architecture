@@ -109,4 +109,62 @@ app.get('/api/logs', async (c) => {
   return c.json(logs);
 });
 
+// Insights - Store agent-generated insights and analysis reports
+app.get('/api/insights', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'insight:' });
+  const insights = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) insights.push(JSON.parse(val));
+  }
+  return c.json(insights);
+});
+
+app.post('/api/insights', async (c) => {
+  const body = await c.req.json();
+
+  // Validate required fields
+  if (!body.title || !body.content) {
+    return c.json({ error: 'Missing required fields: title and content' }, 400);
+  }
+
+  const timestamp = Date.now();
+  const id = `insight:${body.id || timestamp}`;
+  const insight = {
+    id: body.id || timestamp,
+    title: body.title,
+    content: body.content,
+    category: body.category || 'general',
+    source: body.source || 'autonomous-agent',
+    createdAt: new Date(timestamp).toISOString(),
+    ...body,
+  };
+
+  await c.env.AGENT_CACHE.put(id, JSON.stringify(insight));
+  return c.json({ success: true, id, insight });
+});
+
+app.get('/api/insights/:id', async (c) => {
+  const insightId = c.req.param('id');
+  const val = await c.env.AGENT_CACHE.get(`insight:${insightId}`);
+
+  if (!val) {
+    return c.json({ error: 'Insight not found' }, 404);
+  }
+
+  return c.json(JSON.parse(val));
+});
+
+app.delete('/api/insights/:id', async (c) => {
+  const insightId = c.req.param('id');
+  const existing = await c.env.AGENT_CACHE.get(`insight:${insightId}`);
+
+  if (!existing) {
+    return c.json({ error: 'Insight not found' }, 404);
+  }
+
+  await c.env.AGENT_CACHE.delete(`insight:${insightId}`);
+  return c.json({ success: true, message: 'Insight deleted' });
+});
+
 export default app;
