@@ -6,7 +6,7 @@ import { AI_MODEL, LOCAL_MODE_MESSAGE, MAX_RECENT_ITEMS, ERROR_MESSAGES, KV_PREF
 import { z } from 'zod';
 
 // Define minimal KVNamespace interface for local Node execution & type resolution
-interface KVNamespace {
+interface MinimalKVNamespace {
   get(key: string): Promise<string | null>;
   put(key: string, value: string): Promise<void>;
   list(options?: { prefix?: string }): Promise<{ keys: { name: string }[] }>;
@@ -32,7 +32,7 @@ const mockKvSingleton = new MockKV();
 
 // Define bindings
 type Bindings = {
-  AGENT_CACHE: KVNamespace;
+  AGENT_CACHE: MinimalKVNamespace;
   AI: Ai;
 };
 
@@ -270,7 +270,7 @@ function getErrorMessage(error: unknown): string {
 
 // Helper to update metrics
 async function updateMetrics(
-  cache: KVNamespace,
+  cache: MinimalKVNamespace,
   processingTime: number,
   isError: boolean,
   isCacheHit: boolean
@@ -435,11 +435,11 @@ app.post('/api/analyze', async (c) => {
   let body: any; 
   try { 
     body = await c.req.json(); 
-  } catch { 
+  } catch {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); 
-  } 
+  }
 
   const parsed = analyzeSchema.safeParse(body);
   if (!parsed.success) {
@@ -828,7 +828,6 @@ app.get('/api/task-results/:id', async (c) => {
   const id = c.req.param('id');
   const key = getInsightKey(id); // This seems like a copy-paste error, should be task-result key
   
-  // Check if insight exists first - wait, this is task-result, not insight
   // Correct logic for task-result
   const taskKey = id.startsWith('task-result:') ? id : `task-result:${id}`;
   const val = await c.env.AGENT_CACHE.get(taskKey);
@@ -1206,14 +1205,14 @@ app.delete('/api/insights/:id', async (c) => {
 app.get('/api/trends/summary/latest', async (c) => {
   const list = await c.env.AGENT_CACHE.list({ prefix: 'trend:' });
   if (list.keys.length === 0) {
-    return c.json({ 
+    return c.json({
       message: 'No trend reports available',
       summary: null 
     });
   }
   
   // Get the most recent report by extracting numeric timestamp from key
-  const sortedKeys = list.keys.sort((a, b) => {
+  const sortedKeys = list.keys.sort((a: { name: string }, b: { name: string }) => {
     const aId = a.name.replace('trend:', '');
     const bId = b.name.replace('trend:', '');
     const aNum = parseInt(aId, 10);
