@@ -109,6 +109,64 @@ Response:
 }
 ```
 
+### Agent Tasks
+
+Submit autonomous agent tasks and retrieve task history.
+
+#### Submit Task
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/agent-tasks
+Content-Type: application/json
+
+{
+  "task": "Provide insights on current technology",
+  "result": "Analysis of cloud computing, containerization, serverless...",
+  "agentId": "devops-specialist",
+  "status": "completed",
+  "metadata": {
+    "category": "technology-insights"
+  }
+}
+```
+
+**Note:** The `status` field accepts `"pending"`, `"completed"`, or `"failed"`. If not provided, defaults to `"pending"`.
+
+Response:
+```json
+{
+  "success": true,
+  "id": "task:550e8400-e29b-41d4-a716-446655440000",
+  "message": "Task recorded successfully"
+}
+```
+
+#### Get All Tasks
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/agent-tasks
+```
+
+Response:
+```json
+[
+  {
+    "id": "task:1701234567890",
+    "agentId": "devops-specialist",
+    "task": "Provide insights on current technology",
+    "result": "Analysis of cloud computing...",
+    "status": "completed",
+    "timestamp": 1701234567890
+  }
+]
+```
+
+#### Get Specific Task
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/agent-tasks/:id
+```
+
 ## Configuration
 
 ### Environment Variables
