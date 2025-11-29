@@ -35,7 +35,14 @@ app.post('/api/chat', async (c) => {
 // 2. Analyze Artifacts (The "Better" Agent part)
 app.post('/api/analyze', async (c) => {
   const ai = new Ai(c.env.AI);
-  const body = await c.req.json();
+  
+  let body: { data?: unknown; type?: string };
+  try {
+    body = await c.req.json();
+  } catch (parseError) {
+    return c.json({ error: 'Invalid JSON in request body' }, 400);
+  }
+  
   const { data, type } = body;
 
   const prompt = `
@@ -54,7 +61,8 @@ app.post('/api/analyze', async (c) => {
     });
     return c.json(response);
   } catch (e) {
-    return c.json({ error: 'Analysis Failed' }, 500);
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Analysis Failed', details: errorMessage }, 500);
   }
 });
 
