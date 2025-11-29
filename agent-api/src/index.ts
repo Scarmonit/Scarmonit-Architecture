@@ -1,14 +1,29 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { Ai } from '@cloudflare/ai';
+import { AsyncTaskQueue, BackgroundTaskHandler, type TaskResult } from './async';
 
 // Define bindings
 type Bindings = {
   AGENT_CACHE: KVNamespace;
-  AI: any; // Workers AI binding
+  AI: Ai; // Workers AI binding
 };
 
-const app = new Hono<{ Bindings: Bindings }>();
+// Type for variables passed in context
+type Variables = {
+  backgroundHandler: BackgroundTaskHandler;
+};
+
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+
+// Initialize background task handler per request
+app.use('*', async (c, next) => {
+  const handler = new BackgroundTaskHandler({ maxRetries: 3 });
+  // Note: ExecutionContext is not directly available in Hono middleware
+  // The handler can be used for task queue operations
+  c.set('backgroundHandler', handler);
+  await next();
+});
 
 // Middleware
 app.use('*', cors());
@@ -27,7 +42,8 @@ app.post('/api/chat', async (c) => {
     });
     return c.json(response);
   } catch (e) {
-    return c.json({ error: 'AI Generation Failed', details: e.message }, 500);
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'AI Generation Failed', details: errorMessage }, 500);
   }
 });
 
@@ -107,6 +123,100 @@ app.get('/api/logs', async (c) => {
     if (val) logs.push(JSON.parse(val));
   }
   return c.json(logs);
+});
+
+// --- ASYNC TASK QUEUE ENDPOINTS ---
+
+// Request body type for task submission
+interface TaskSubmission {
+  tasks: Array<{
+    id?: string;
+    type: 'delay' | 'compute' | 'fetch';
+    payload?: unknown;
+    priority?: number;
+  }>;
+  options?: {
+    maxConcurrency?: number;
+    timeout?: number;
+  };
+}
+
+// Process multiple tasks concurrently using the producer-consumer pattern
+app.post('/api/tasks/process', async (c) => {
+  try {
+    const body = await c.req.json() as TaskSubmission;
+    
+    if (!body.tasks || !Array.isArray(body.tasks)) {
+      return c.json({ error: 'Invalid request: tasks array required' }, 400);
+    }
+
+    const queue = new AsyncTaskQueue<unknown>({
+      maxConcurrency: body.options?.maxConcurrency ?? 5,
+      timeout: body.options?.timeout ?? 30000,
+    });
+
+    // Add tasks to the queue (producer pattern)
+    for (const taskDef of body.tasks) {
+      const taskId = taskDef.id ?? `task-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      
+      queue.enqueue({
+        id: taskId,
+        priority: taskDef.priority ?? 0,
+        execute: async () => {
+          switch (taskDef.type) {
+            case 'delay':
+              // Simulated async operation with delay
+              const delay = typeof taskDef.payload === 'number' ? taskDef.payload : 100;
+              await new Promise((resolve) => setTimeout(resolve, delay));
+              return { type: 'delay', delayed: delay };
+              
+            case 'compute':
+              // Simulated computation
+              const input = taskDef.payload ?? 0;
+              const result = typeof input === 'number' ? input * 2 : 0;
+              return { type: 'compute', result };
+              
+            case 'fetch':
+              // Simulated data fetch from KV
+              const key = typeof taskDef.payload === 'string' ? taskDef.payload : 'default';
+              const data = await c.env.AGENT_CACHE.get(key);
+              return { type: 'fetch', key, data };
+              
+            default:
+              return { type: 'unknown', payload: taskDef.payload };
+          }
+        },
+      });
+    }
+
+    // Process all tasks (consumer pattern)
+    const results = await queue.processAll();
+    
+    // Convert Map to array for JSON response
+    const resultArray: TaskResult<unknown>[] = [];
+    results.forEach((value) => resultArray.push(value));
+
+    return c.json({
+      success: true,
+      totalTasks: body.tasks.length,
+      results: resultArray,
+    });
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Task processing failed', details: errorMessage }, 500);
+  }
+});
+
+// Get task queue status endpoint
+app.get('/api/tasks/status', (c) => {
+  return c.json({
+    status: 'ready',
+    description: 'Async task queue is ready to process tasks',
+    patterns: {
+      producerConsumer: 'POST /api/tasks/process - Submit tasks for concurrent processing',
+      supportedTypes: ['delay', 'compute', 'fetch'],
+    },
+  });
 });
 
 export default app;
