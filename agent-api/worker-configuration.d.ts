@@ -3,20 +3,14 @@
  * Defines all Cloudflare Workers bindings and environment types
  */
 
-// Cloudflare Workers AI binding type
-interface WorkersAI {
-  run<T = unknown>(
-    model: string,
-    inputs: Record<string, unknown>
-  ): Promise<T>
-}
+import { Ai } from '@cloudflare/ai';
 
 // Environment bindings interface
 interface Env {
   /** KV Namespace for caching agent data */
   AGENT_CACHE: KVNamespace
   /** Cloudflare Workers AI binding */
-  AI: WorkersAI
+  AI: Ai
 }
 
 // Chat message type for AI interactions
@@ -75,7 +69,6 @@ interface APISuccess<T = unknown> {
 
 export type {
   Env,
-  WorkersAI,
   ChatMessage,
   AIResponse,
   AnalyzeRequestBody,
