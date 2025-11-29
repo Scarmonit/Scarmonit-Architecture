@@ -6,7 +6,9 @@
   "workspaces": [
     "web-portal",
     "agent-api",
-    "desktop-app"
+    "desktop-app",
+    "copilot-extension",
+    "mcp-server"
   ],
   "scripts": {
     "install:all": "npm install && cd web-portal && npm install && cd ../agent-api && npm install && cd ../desktop-app && npm install",
