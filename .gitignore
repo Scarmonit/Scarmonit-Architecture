@@ -141,5 +141,40 @@ vite.config.ts.timestamp-*
 # Python virtual environment
 venv/
 
+<<<<<<< HEAD
 # Wrangler cache
 .wrangler/
+=======
+
+# ===========================================
+# Scarmonit-specific ignores
+# ===========================================
+
+# IDE configurations
+.idea/
+*.iml
+
+# Build artifacts
+build/
+*.bak
+node_modules.bak/
+
+# Diagnostic and test output files
+*.err
+*-output.txt
+test-results-*.txt
+activation-diagnostic-*.txt
+server-startup.txt
+
+# Temporary and generated files
+*.copy.ts
+*.copy.js
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Wrangler local dev
+.wrangler/
+.dev.vars
+>>>>>>> Scarmonit
