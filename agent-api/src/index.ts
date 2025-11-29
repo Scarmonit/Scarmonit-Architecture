@@ -2,10 +2,32 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { Ai } from '@cloudflare/ai';
 
+// --- INTERFACES ---
+
+// Technology Trends Types
+interface TechnologyTrend {
+  name: string;
+  adoptionRate: number;
+  previousAdoptionRate?: number;
+  applications: string[];
+  benefits: string[];
+  concerns?: string[];
+}
+
+interface TechnologyTrendsReport {
+  id: string;
+  reportDate: string;
+  quarter: string;
+  trends: TechnologyTrend[];
+  insights: string[];
+  recommendations: string[];
+  submittedBy?: string;
+}
+
 // Define bindings
 type Bindings = {
   AGENT_CACHE: KVNamespace;
-  AI: any; // Workers AI binding
+  AI: unknown; // Workers AI binding
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -27,7 +49,8 @@ app.post('/api/chat', async (c) => {
     });
     return c.json(response);
   } catch (e) {
-    return c.json({ error: 'AI Generation Failed', details: e.message }, 500);
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'AI Generation Failed', details: errorMessage }, 500);
   }
 });
 
@@ -107,6 +130,90 @@ app.get('/api/logs', async (c) => {
     if (val) logs.push(JSON.parse(val));
   }
   return c.json(logs);
+});
+
+// --- TECHNOLOGY TRENDS ENDPOINTS ---
+
+// Get the latest technology trends summary (must be before :id route)
+app.get('/api/trends/summary/latest', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'trend:' });
+  if (list.keys.length === 0) {
+    return c.json({ 
+      message: 'No trend reports available',
+      summary: null 
+    });
+  }
+  
+  // Get the most recent report (assuming IDs are timestamp-based)
+  const sortedKeys = list.keys.sort((a, b) => b.name.localeCompare(a.name));
+  const latestKey = sortedKeys[0];
+  const val = await c.env.AGENT_CACHE.get(latestKey.name);
+  
+  if (!val) {
+    return c.json({ error: 'Failed to retrieve latest trend report' }, 500);
+  }
+  
+  const report = JSON.parse(val) as TechnologyTrendsReport;
+  
+  // Create a summary
+  const summary = {
+    reportId: report.id,
+    reportDate: report.reportDate,
+    quarter: report.quarter,
+    topTrends: report.trends.slice(0, 5).map(t => ({
+      name: t.name,
+      adoptionRate: t.adoptionRate
+    })),
+    keyInsights: report.insights.slice(0, 3),
+    submittedBy: report.submittedBy
+  };
+  
+  return c.json(summary);
+});
+
+// Get all technology trends reports
+app.get('/api/trends', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'trend:' });
+  const trends: TechnologyTrendsReport[] = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) trends.push(JSON.parse(val) as TechnologyTrendsReport);
+  }
+  return c.json(trends);
+});
+
+// Get a specific technology trends report by ID
+app.get('/api/trends/:id', async (c) => {
+  const id = c.req.param('id');
+  const val = await c.env.AGENT_CACHE.get(`trend:${id}`);
+  if (!val) {
+    return c.json({ error: 'Trend report not found' }, 404);
+  }
+  return c.json(JSON.parse(val) as TechnologyTrendsReport);
+});
+
+// Submit a new technology trends report
+app.post('/api/trends', async (c) => {
+  const body = await c.req.json();
+  
+  // Validate required fields
+  if (!body.trends || !Array.isArray(body.trends)) {
+    return c.json({ error: 'Invalid request: trends array is required' }, 400);
+  }
+  
+  const reportId = body.id || `${Date.now()}`;
+  const report: TechnologyTrendsReport = {
+    id: reportId,
+    reportDate: body.reportDate || new Date().toISOString(),
+    quarter: body.quarter || `Q${Math.ceil((new Date().getMonth() + 1) / 3)} ${new Date().getFullYear()}`,
+    trends: body.trends,
+    insights: body.insights || [],
+    recommendations: body.recommendations || [],
+    submittedBy: body.submittedBy || 'Autonomous Agent'
+  };
+  
+  await c.env.AGENT_CACHE.put(`trend:${reportId}`, JSON.stringify(report));
+  return c.json({ success: true, id: reportId, report });
 });
 
 export default app;
