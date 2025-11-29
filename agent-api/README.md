@@ -109,6 +109,71 @@ Response:
 }
 ```
 
+### Complex Problem Analysis
+
+Analyze complex problems using a structured five-step framework:
+1. Information Gathering
+2. Situation Analysis
+3. Impact Assessment
+4. Plan Development
+5. Prioritization
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/analyze/complex
+Content-Type: application/json
+
+{
+  "problemDescription": "Authentication system showing intermittent failures during peak hours",
+  "systemArchitecture": "Microservices with OAuth2, Redis session store, PostgreSQL backend",
+  "userRoles": ["admin", "user", "service-account"],
+  "networkTopology": "Load balancer -> API Gateway -> Auth Service -> Database",
+  "dataStorage": "PostgreSQL for user credentials, Redis for sessions",
+  "logs": "Connection timeout errors increasing at 9AM-11AM",
+  "additionalContext": "Recent deployment of new rate limiting middleware"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "input": {
+    "problemDescription": "Authentication system showing intermittent failures during peak hours",
+    "hasSystemArchitecture": true,
+    "hasUserRoles": true,
+    "hasNetworkTopology": true,
+    "hasDataStorage": true,
+    "hasLogs": true,
+    "hasAdditionalContext": true
+  },
+  "analysis": {
+    "problemSummary": "...",
+    "analysis": [
+      {
+        "step": "1. Information Gathering",
+        "findings": ["..."],
+        "recommendations": ["..."]
+      }
+    ],
+    "overallRiskLevel": "medium",
+    "prioritizedActions": ["..."],
+    "implementationTimeline": "..."
+  }
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `problemDescription` | string | Yes | Description of the problem to analyze |
+| `systemArchitecture` | string | No | Description of system architecture and components |
+| `userRoles` | string[] | No | List of user roles and access controls |
+| `networkTopology` | string | No | Network topology and communication protocols |
+| `dataStorage` | string | No | Data storage and processing mechanisms |
+| `logs` | string | No | Relevant logs or incident reports |
+| `additionalContext` | string | No | Any additional context for the analysis |
+
 ## Configuration
 
 ### Environment Variables
