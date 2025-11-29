@@ -27,7 +27,8 @@ app.post('/api/chat', async (c) => {
     });
     return c.json(response);
   } catch (e) {
-    return c.json({ error: 'AI Generation Failed', details: e.message }, 500);
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'AI Generation Failed', details: errorMessage }, 500);
   }
 });
 
@@ -55,6 +56,135 @@ app.post('/api/analyze', async (c) => {
   } catch (e) {
     return c.json({ error: 'Analysis Failed' }, 500);
   }
+});
+
+// 3. Autonomous Agent Task - Complex Problem Analysis
+// Endpoint for data collection specialist agent to analyze complex problems
+interface AgentTaskRequest {
+  task: string;
+  context?: string;
+  sources?: string[];
+  dataType?: 'text' | 'numbers' | 'images' | 'mixed';
+}
+
+interface AgentTaskResponse {
+  taskId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  result?: {
+    analysis: string;
+    dataCollected: string[];
+    recommendations: string[];
+    nextSteps: string[];
+  };
+  error?: string;
+  timestamp: string;
+}
+
+app.post('/api/agent/task', async (c) => {
+  const ai = new Ai(c.env.AI);
+  
+  let body: AgentTaskRequest;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ 
+      error: 'Invalid JSON body',
+      status: 'failed',
+      timestamp: new Date().toISOString()
+    }, 400);
+  }
+
+  // Input validation
+  if (!body.task || typeof body.task !== 'string' || body.task.trim() === '') {
+    return c.json({ 
+      error: 'Task description is required',
+      status: 'failed',
+      timestamp: new Date().toISOString()
+    }, 400);
+  }
+
+  const taskId = `task_${Date.now()}`;
+  const validDataTypes = ['text', 'numbers', 'images', 'mixed'];
+  const dataType = body.dataType && validDataTypes.includes(body.dataType) 
+    ? body.dataType 
+    : 'text';
+
+  const systemPrompt = `You are a data collection specialist AI agent. Your role is to analyze complex problems and provide structured insights.
+
+When given a task:
+1. Break down the problem into manageable components
+2. Identify what data would be relevant to collect
+3. Provide analysis and recommendations
+4. Suggest concrete next steps
+
+Always respond in a structured, actionable format.`;
+
+  const userPrompt = `Task: ${body.task.trim()}
+${body.context ? `\nContext: ${body.context}` : ''}
+${body.sources && body.sources.length > 0 ? `\nSources to consider: ${body.sources.join(', ')}` : ''}
+Data type focus: ${dataType}
+
+Please analyze this problem and provide:
+1. Your analysis of the problem
+2. What data would be valuable to collect
+3. Your recommendations
+4. Suggested next steps`;
+
+  try {
+    const response = await ai.run('@cf/meta/llama-3-8b-instruct', {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+    });
+
+    // Store the task result in KV cache
+    const taskResult: AgentTaskResponse = {
+      taskId,
+      status: 'completed',
+      result: {
+        analysis: typeof response === 'object' && response !== null && 'response' in response 
+          ? String(response.response) 
+          : JSON.stringify(response),
+        dataCollected: body.sources || [],
+        recommendations: [],
+        nextSteps: []
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    await c.env.AGENT_CACHE.put(`task:${taskId}`, JSON.stringify(taskResult), {
+      expirationTtl: 86400 // 24 hours
+    });
+
+    return c.json(taskResult);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    const errorResponse: AgentTaskResponse = {
+      taskId,
+      status: 'failed',
+      error: `Task processing failed: ${errorMessage}`,
+      timestamp: new Date().toISOString()
+    };
+    return c.json(errorResponse, 500);
+  }
+});
+
+// Get task status/result by ID
+app.get('/api/agent/task/:taskId', async (c) => {
+  const taskId = c.req.param('taskId');
+  
+  if (!taskId) {
+    return c.json({ error: 'Task ID is required' }, 400);
+  }
+
+  const result = await c.env.AGENT_CACHE.get(`task:${taskId}`);
+  
+  if (!result) {
+    return c.json({ error: 'Task not found', taskId }, 404);
+  }
+
+  return c.json(JSON.parse(result));
 });
 
 // --- CRUD ENDPOINTS (Ported) ---

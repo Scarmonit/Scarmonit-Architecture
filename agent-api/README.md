@@ -85,6 +85,64 @@ Response:
 }
 ```
 
+### Autonomous Agent Task
+
+Create and submit a task for the data collection specialist agent to analyze:
+
+```bash
+POST https://agent-api.scarmonit.workers.dev/api/agent/task
+Content-Type: application/json
+
+{
+  "task": "Analyze the performance bottlenecks in our microservices architecture",
+  "context": "We have 15 services running on Kubernetes with intermittent latency spikes",
+  "sources": ["https://grafana.example.com/dashboards", "service logs"],
+  "dataType": "mixed"
+}
+```
+
+Response:
+```json
+{
+  "taskId": "task_1701234567890",
+  "status": "completed",
+  "result": {
+    "analysis": "Based on the task description...",
+    "dataCollected": ["https://grafana.example.com/dashboards", "service logs"],
+    "recommendations": [],
+    "nextSteps": []
+  },
+  "timestamp": "2025-11-29T06:50:00.000Z"
+}
+```
+
+#### Request Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| task | string | Yes | Description of the complex problem to analyze |
+| context | string | No | Additional context about the problem |
+| sources | string[] | No | URLs or data sources to consider |
+| dataType | string | No | Type of data focus: `text`, `numbers`, `images`, or `mixed` |
+
+### Get Task Status
+
+Retrieve the status or result of a previously submitted task:
+
+```bash
+GET https://agent-api.scarmonit.workers.dev/api/agent/task/:taskId
+```
+
+Response:
+```json
+{
+  "taskId": "task_1701234567890",
+  "status": "completed",
+  "result": {...},
+  "timestamp": "2025-11-29T06:50:00.000Z"
+}
+```
+
 ### Call Tool
 
 ```bash
