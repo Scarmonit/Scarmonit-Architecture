@@ -1,20 +1,16 @@
 import { useState } from 'react';
-import { 
-  Bot, 
-  Play, 
-  Pause, 
-  Settings, 
+import {
+  Bot,
+  Play,
+  Pause,
+  Settings,
   Terminal,
   Plus,
-  MoreVertical,
-  Cpu,
   Zap,
   Clock,
   CheckCircle2,
   AlertTriangle,
-  Search,
-  Filter,
-  RefreshCw
+  Search
 } from 'lucide-react';
 
 interface Agent {
