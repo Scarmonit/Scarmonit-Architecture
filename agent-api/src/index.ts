@@ -36,12 +36,15 @@ interface CacheEntry {
 // Default cache TTL (5 minutes)
 const CACHE_TTL = 5 * 60 * 1000
 
-// Generate cache key from request
+// Generate cache key from request using FNV-1a hash for better distribution
 function generateCacheKey(prefix: string, data: unknown): string {
-  const hash = JSON.stringify(data)
-    .split('')
-    .reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0)
-  return `${prefix}:${Math.abs(hash)}`
+  const str = JSON.stringify(data)
+  let hash = 2166136261 // FNV offset basis
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i)
+    hash = Math.imul(hash, 16777619) // FNV prime
+  }
+  return `${prefix}:${(hash >>> 0).toString(16)}`
 }
 
 // Extract error message safely
@@ -169,6 +172,8 @@ function generateActionPlan(metrics: EfficiencyMetrics): string[] {
 }
 
 // Helper to update metrics
+// Note: Uses eventual consistency for metrics updates which is acceptable
+// for analytics data. Cloudflare KV handles write propagation across edge nodes.
 async function updateMetrics(
   cache: KVNamespace,
   processingTime: number,
@@ -227,7 +232,7 @@ app.post('/api/chat', async (c) => {
     const body = await c.req.json()
 
     // Input validation for accuracy
-    if (!body || (typeof body !== 'object')) {
+    if (!body || typeof body !== 'object') {
       isError = true
       await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit)
       return c.json({ error: 'Invalid request body', code: 'INVALID_INPUT' }, 400)
@@ -244,7 +249,11 @@ app.post('/api/chat', async (c) => {
       if (Date.now() - cached.timestamp < cached.ttl) {
         isCacheHit = true
         await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit)
-        return c.json({ ...cached.response as object, cached: true })
+        // Return cached response with cache indicator
+        const cachedResponse = typeof cached.response === 'object' && cached.response !== null
+          ? { ...cached.response, cached: true }
+          : { response: cached.response, cached: true }
+        return c.json(cachedResponse)
       }
     }
 
@@ -311,7 +320,11 @@ app.post('/api/analyze', async (c) => {
       if (Date.now() - cached.timestamp < cached.ttl) {
         isCacheHit = true
         await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit)
-        return c.json({ ...cached.response as object, cached: true })
+        // Return cached response with cache indicator
+        const cachedResponse = typeof cached.response === 'object' && cached.response !== null
+          ? { ...cached.response, cached: true }
+          : { response: cached.response, cached: true }
+        return c.json(cachedResponse)
       }
     }
 
