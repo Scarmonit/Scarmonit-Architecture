@@ -5,6 +5,13 @@
       <excludeFolder url="file://$MODULE_DIR$/.tmp" />
       <excludeFolder url="file://$MODULE_DIR$/temp" />
       <excludeFolder url="file://$MODULE_DIR$/tmp" />
+      <excludeFolder url="file://$MODULE_DIR$/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/node_modules" />
+      <excludeFolder url="file://$MODULE_DIR$/web-portal/node_modules" />
+      <excludeFolder url="file://$MODULE_DIR$/agent-api/node_modules" />
+      <excludeFolder url="file://$MODULE_DIR$/desktop-app/node_modules" />
+      <excludeFolder url="file://$MODULE_DIR$/mcp-server/node_modules" />
+      <excludeFolder url="file://$MODULE_DIR$/copilot-extension/node_modules" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
