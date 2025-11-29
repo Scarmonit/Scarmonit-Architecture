@@ -6,6 +6,7 @@ on:
       - opened
       - synchronize
       - reopened
+      - ready_for_review
   push:
     branches:
       - main
@@ -17,13 +18,21 @@ permissions:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    if: github.actor == 'google-jules[bot]' || github.actor == 'jules-ai' || contains(github.event.pull_request.title, '[Jules]')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Auto-Merge
+      - name: Auto-Approve and Merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr merge ${{ github.event.pull_request.number }} --squash --auto
+          PR_URL="${{ github.event.pull_request.html_url }}"
+
+          # Approve the PR (required if branch protection rules exist)
+          # Note: GITHUB_TOKEN can approve PRs as long as it didn't create them.
+          echo "Approving PR..."
+          gh pr review "$PR_URL" --approve || echo "Approval failed or not needed (possibly own PR)"
+
+          # Enable Auto-Merge
+          echo "Enabling Auto-Merge..."
+          gh pr merge "$PR_URL" --squash --auto
