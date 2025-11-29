@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ☁️ Scarmonit Agent API
 
 > **Cloudflare Worker for MCP proxy and agent orchestration**
@@ -493,3 +494,6 @@ jobs:
 ## License
 
 MIT © Scarmonit Industries
+=======
+Successfully overwrote file: C:\Users\scarm\Scarmonit-Architecture\agent-api\README.md.
+>>>>>>> Scarmonit
