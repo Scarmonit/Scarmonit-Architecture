@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "..\\node_modules\\.bin\\vite.cmd",
-    "build": "..\\node_modules\\.bin\\vite.cmd build",
+    "dev": "vite",
+    "build": "vite build",
     "lint": "eslint .",
-    "preview": "..\\node_modules\\.bin\\vite.cmd preview",
+    "preview": "vite preview",
     "deploy": "npm run build && npx wrangler pages deploy dist --project-name=scarmonit-www",
     "test": "echo \"No unit tests\"",
     "test:e2e": "npx playwright test"
