@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npx vite",
-    "build": "npx vite build",
+    "dev": "..\\node_modules\\.bin\\vite.cmd",
+    "build": "..\\node_modules\\.bin\\vite.cmd build",
     "lint": "eslint .",
-    "preview": "npx vite preview",
+    "preview": "..\\node_modules\\.bin\\vite.cmd preview",
     "deploy": "npm run build && npx wrangler pages deploy dist --project-name=scarmonit-www",
     "test": "echo \"No unit tests\"",
     "test:e2e": "npx playwright test"
@@ -29,9 +29,10 @@
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "rollup": "^4.53.3",
     "terser": "^5.37.0",
     "typescript": "~5.3.3",
     "typescript-eslint": "^7.18.0",
-    "vite": "^5.0.0"
+    "vite": "^5.4.21"
   }
 }
