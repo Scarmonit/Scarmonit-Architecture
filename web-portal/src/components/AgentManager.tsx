@@ -76,7 +76,8 @@ export function AgentManager() {
     // Only call API when starting/resuming
     if (agent.status === 'idle' || agent.status === 'paused') {
       try {
-        await fetch('http://localhost:8787/api/tasks', {
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+        await fetch(`${baseUrl}/api/tasks`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
