@@ -10,18 +10,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: agent-api/package-lock.json
+          bun-version: latest
       - name: Install deps (agent-api)
-        run: npm ci --include=dev --prefix agent-api
-      - name: Typecheck (agent-api)
-        run: npm run types --prefix agent-api
+        run: cd agent-api && bun install
       - name: Test (agent-api)
-        run: npm test --prefix agent-api -- --coverage
+        run: cd agent-api && bun run test
       - name: Upload coverage (agent-api)
         if: success()
         uses: actions/upload-artifact@v4
