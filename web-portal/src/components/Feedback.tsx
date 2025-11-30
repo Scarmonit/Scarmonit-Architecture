@@ -5,7 +5,6 @@ import {
   CheckCircle2, 
   MessageSquare,
   ThumbsUp,
-  ThumbsDown,
   Lightbulb,
   Bug,
   Sparkles

@@ -141,6 +141,10 @@ vite.config.ts.timestamp-*
 # Python virtual environment
 venv/
 
+<<<<<<< HEAD
+# Wrangler cache
+.wrangler/
+=======
 
 # ===========================================
 # Scarmonit-specific ignores
@@ -173,3 +177,4 @@ Thumbs.db
 # Wrangler local dev
 .wrangler/
 .dev.vars
+>>>>>>> Scarmonit

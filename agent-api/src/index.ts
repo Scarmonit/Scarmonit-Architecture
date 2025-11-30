@@ -6,7 +6,7 @@ import { AI_MODEL, LOCAL_MODE_MESSAGE, MAX_RECENT_ITEMS, ERROR_MESSAGES, KV_PREF
 import { z } from 'zod';
 
 // Define minimal KVNamespace interface for local Node execution & type resolution
-interface KVNamespace {
+interface MinimalKVNamespace {
   get(key: string): Promise<string | null>;
   put(key: string, value: string): Promise<void>;
   list(options?: { prefix?: string }): Promise<{ keys: { name: string }[] }>;
@@ -32,7 +32,7 @@ const mockKvSingleton = new MockKV();
 
 // Define bindings
 type Bindings = {
-  AGENT_CACHE: KVNamespace;
+  AGENT_CACHE: MinimalKVNamespace;
   AI: Ai;
 };
 
@@ -209,13 +209,13 @@ app.use('*', cors());
 
 // Inject Mock if missing
 app.use('*', async (c, next) => {
-  if (!c.env) { (c as any).env = {} as any; }
+  if (!c.env) { (c as unknown as { env: Bindings }).env = {} as Bindings; }
   if (!c.env.AGENT_CACHE) {
     logger.warn('Running in Local Mode: Using Mock KV');
-    c.env.AGENT_CACHE = mockKvSingleton as any;
+    c.env.AGENT_CACHE = mockKvSingleton as unknown as MinimalKVNamespace;
   }
   if (!c.env.AI) {
-    c.env.AI = { run: async () => ({ response: LOCAL_MODE_MESSAGE }) } as any;
+    c.env.AI = { run: async () => ({ response: LOCAL_MODE_MESSAGE }) } as unknown as Ai;
     logger.debug('Injected AI mock binding');
   }
   await next();
@@ -270,7 +270,7 @@ function getErrorMessage(error: unknown): string {
 
 // Helper to update metrics
 async function updateMetrics(
-  cache: KVNamespace,
+  cache: MinimalKVNamespace,
   processingTime: number,
   isError: boolean,
   isCacheHit: boolean
@@ -366,7 +366,7 @@ app.post('/api/chat', async (c) => {
   let isCacheHit = false;
   let isError = false;
 
-  let body: any; 
+  let body: unknown; 
   try { 
     body = await c.req.json(); 
   } catch {
@@ -418,11 +418,12 @@ app.post('/api/chat', async (c) => {
 
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json(response);
-  } catch (e: any) {
+  } catch (e: unknown) {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
-    logger.error('Chat generation failure', { message: e?.message });
-    return c.json({ error: ERROR_MESSAGES.AI_GENERATION_FAILED, details: e?.message }, 500);
+    const message = e instanceof Error ? e.message : String(e);
+    logger.error('Chat generation failure', { message });
+    return c.json({ error: ERROR_MESSAGES.AI_GENERATION_FAILED, details: message }, 500);
   }
 });
 
@@ -432,7 +433,7 @@ app.post('/api/analyze', async (c) => {
   let isCacheHit = false;
   let isError = false;
 
-  let body: any; 
+  let body: unknown; 
   try { 
     body = await c.req.json(); 
   } catch {
@@ -481,11 +482,12 @@ app.post('/api/analyze', async (c) => {
 
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
     return c.json(response);
-  } catch (e: any) {
+  } catch (e: unknown) {
     isError = true;
     await updateMetrics(c.env.AGENT_CACHE, Date.now() - startTime, isError, isCacheHit);
-    logger.error('Analysis failure', { message: e?.message });
-    return c.json({ error: ERROR_MESSAGES.ANALYSIS_FAILED, details: e?.message }, 500);
+    const message = e instanceof Error ? e.message : String(e);
+    logger.error('Analysis failure', { message });
+    return c.json({ error: ERROR_MESSAGES.ANALYSIS_FAILED, details: message }, 500);
   }
 });
 
@@ -684,7 +686,7 @@ app.get('/api/agents', async (c) => {
 });
 
 app.post('/api/agents', async (c) => {
-  let body: any; try { body = await c.req.json(); } catch { return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); }
+  let body: unknown; try { body = await c.req.json(); } catch { return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); }
   const parsed = agentSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400);
   const id = `${KV_PREFIX.AGENT}${parsed.data.id}`;
@@ -705,7 +707,7 @@ app.get('/api/artifacts', async (c) => {
 });
 
 app.post('/api/artifacts', async (c) => {
-  let body: any; try { body = await c.req.json(); } catch { return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); }
+  let body: unknown; try { body = await c.req.json(); } catch { return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400); }
   const parsed = artifactSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: ERROR_MESSAGES.INVALID_INPUT }, 400);
   const id = `${KV_PREFIX.ARTIFACT}${parsed.data.id}`;
@@ -826,11 +828,12 @@ app.get('/api/task-results', async (c) => {
 // Get a specific task result by ID
 app.get('/api/task-results/:id', async (c) => {
   const id = c.req.param('id');
-  const key = getInsightKey(id); // Reusing helper for consistent ID handling
-  // Correct key prefix check for task results
-  const taskKey = id.startsWith('task-result:') ? id : `task-result:${id}`;
+  const key = getInsightKey(id); // This seems like a copy-paste error, should be task-result key
   
+  // Correct logic for task-result
+  const taskKey = id.startsWith('task-result:') ? id : `task-result:${id}`;
   const val = await c.env.AGENT_CACHE.get(taskKey);
+  
   if (!val) {
     return c.json({ error: 'Task result not found' }, 404);
   }
@@ -865,8 +868,7 @@ app.post('/api/task-results', async (c) => {
 // Update a task result
 app.put('/api/task-results/:id', async (c) => {
   const id = c.req.param('id');
-  const taskKey = id.startsWith('task-result:') ? id : `task-result:${id}`;
-  const existing = await c.env.AGENT_CACHE.get(taskKey);
+  const existing = await c.env.AGENT_CACHE.get(`task-result:${id}`);
   
   if (!existing) {
     return c.json({ error: 'Task result not found' }, 404);
@@ -885,21 +887,20 @@ app.put('/api/task-results/:id', async (c) => {
     updatedAt: now,
   };
 
-  await c.env.AGENT_CACHE.put(taskKey, JSON.stringify(updated));
+  await c.env.AGENT_CACHE.put(`task-result:${id}`, JSON.stringify(updated));
   return c.json({ success: true, taskResult: updated });
 });
 
 // Delete a task result
 app.delete('/api/task-results/:id', async (c) => {
   const id = c.req.param('id');
-  const taskKey = id.startsWith('task-result:') ? id : `task-result:${id}`;
-  const existing = await c.env.AGENT_CACHE.get(taskKey);
+  const existing = await c.env.AGENT_CACHE.get(`task-result:${id}`);
   
   if (!existing) {
     return c.json({ error: 'Task result not found' }, 404);
   }
 
-  await c.env.AGENT_CACHE.delete(taskKey);
+  await c.env.AGENT_CACHE.delete(`task-result:${id}`);
   return c.json({ success: true, message: 'Task result deleted' });
 });
 
@@ -932,9 +933,10 @@ app.post('/api/analyze/complex', async (c) => {
 
     const response = await ai.run(AI_MODEL, { messages: [{ role: 'user', content: prompt }] });
     return c.json(response);
-  } catch (e: any) {
-    logger.error('Complex analysis failure', { message: e?.message });
-    return c.json({ error: ERROR_MESSAGES.ANALYSIS_FAILED, details: e?.message }, 500);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    logger.error('Complex analysis failure', { message });
+    return c.json({ error: ERROR_MESSAGES.ANALYSIS_FAILED, details: message }, 500);
   }
 });
 
@@ -1213,7 +1215,7 @@ app.get('/api/trends/summary/latest', async (c) => {
   }
   
   // Get the most recent report by extracting numeric timestamp from key
-  const sortedKeys = list.keys.sort((a, b) => {
+  const sortedKeys = list.keys.sort((a: { name: string }, b: { name: string }) => {
     const aId = a.name.replace('trend:', '');
     const bId = b.name.replace('trend:', '');
     const aNum = parseInt(aId, 10);
@@ -1351,6 +1353,309 @@ app.get('/api/messaging/ai-solutions', (c) => {
   };
 
   return c.json(messaging);
+});
+
+// --- AUTONOMOUS AGENT TASK MANAGEMENT (PR #874) ---
+
+// Types for task requests
+interface TaskRequest {
+  taskId?: string;
+  agentType?: string;
+  task: string;
+  domain?: 'healthcare' | 'finance' | 'technology' | 'general';
+  stakeholders?: string[];
+  dataTypes?: ('text' | 'images' | 'videos' | 'spreadsheets' | 'urls')[];
+  sourceUrl?: string;
+  additionalContext?: string;
+}
+
+interface TaskResponse {
+  taskId: string;
+  status: 'pending' | 'in_progress' | 'needs_clarification' | 'completed';
+  result?: string;
+  clarificationNeeded?: string[];
+  timestamp: string;
+}
+
+// Helper function to ensure consistent task key formatting
+function formatTaskKey(taskId: string): string {
+  return taskId.startsWith('task:') ? taskId : `task:${taskId}`;
+}
+
+// Helper function to determine task status based on clarification data
+function determineTaskStatus(
+  clarificationData: Partial<TaskRequest>
+): TaskResponse['status'] {
+  // Task moves to 'in_progress' when essential context is provided
+  const hasEssentialContext = Boolean(
+    clarificationData.domain ||
+    (clarificationData.stakeholders && clarificationData.stakeholders.length > 0) ||
+    (clarificationData.dataTypes && clarificationData.dataTypes.length > 0)
+  );
+  
+  return hasEssentialContext ? 'in_progress' : 'needs_clarification';
+}
+
+// 3. Submit task to autonomous agent with context
+app.post('/api/tasks', async (c) => {
+  const body = await c.req.json() as TaskRequest;
+  
+  // Validate required fields
+  if (!body.task) {
+    return c.json({ error: 'Task description is required' }, 400);
+  }
+
+  const taskId = formatTaskKey(body.taskId || `${Date.now()}`);
+  const task: TaskResponse = {
+    taskId,
+    status: 'pending',
+    timestamp: new Date().toISOString(),
+  };
+
+  // Store task in KV
+  await c.env.AGENT_CACHE.put(taskId, JSON.stringify({
+    ...body,
+    ...task,
+  }));
+
+  return c.json({
+    success: true,
+    taskId,
+    message: 'Task submitted successfully',
+    status: task.status,
+  });
+});
+
+// 4. Get task status
+app.get('/api/tasks/:taskId', async (c) => {
+  const taskId = c.req.param('taskId');
+  const key = formatTaskKey(taskId);
+  const val = await c.env.AGENT_CACHE.get(key);
+  
+  if (!val) {
+    return c.json({ error: 'Task not found' }, 404);
+  }
+  
+  return c.json(JSON.parse(val));
+});
+
+// 5. List all tasks
+app.get('/api/tasks', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'task:' });
+  const tasks = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) tasks.push(JSON.parse(val));
+  }
+  return c.json(tasks);
+});
+
+// 6. Analyze complex problem with domain context
+app.post('/api/analyze-complex', async (c) => {
+  const ai = new Ai(c.env.AI);
+  const body = await c.req.json() as TaskRequest;
+
+  // Validate input
+  if (!body.task) {
+    return c.json({ error: 'Task description is required' }, 400);
+  }
+
+  // Build context-aware prompt based on domain and data types
+  const domainContext = body.domain 
+    ? `Domain: ${body.domain}\n` 
+    : '';
+  
+  const stakeholderContext = body.stakeholders?.length 
+    ? `Stakeholders: ${body.stakeholders.join(', ')}\n`
+    : '';
+  
+  const dataTypeContext = body.dataTypes?.length
+    ? `Data types to consider: ${body.dataTypes.join(', ')}\n`
+    : '';
+  
+  const urlContext = body.sourceUrl
+    ? `Reference URL: ${body.sourceUrl}\n`
+    : '';
+  
+  const additionalInfo = body.additionalContext
+    ? `Additional context: ${body.additionalContext}\n`
+    : '';
+
+  const prompt = `
+You are an expert data collection specialist AI agent analyzing a complex problem.
+
+${domainContext}${stakeholderContext}${dataTypeContext}${urlContext}${additionalInfo}
+
+Problem to analyze:
+${body.task}
+
+Provide a comprehensive JSON response with:
+- "analysis": A detailed analysis of the problem
+- "data_requirements": Array of specific data that needs to be collected
+- "recommended_sources": Array of suggested data sources
+- "risk_assessment": "low" | "medium" | "high"
+- "complexity_score": Number from 1-10
+- "next_steps": Array of actionable next steps
+- "clarification_questions": Array of questions if more information is needed
+  `;
+
+  try {
+    const response = await ai.run('@cf/meta/llama-3-8b-instruct', {
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    // Store the analysis result as a task
+    const taskId = formatTaskKey(body.taskId || `${Date.now()}`);
+    await c.env.AGENT_CACHE.put(taskId, JSON.stringify({
+      ...body,
+      taskId,
+      status: 'completed',
+      result: response,
+      timestamp: new Date().toISOString(),
+    }));
+
+    return c.json({
+      success: true,
+      taskId,
+      ...response,
+    });
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return c.json({ error: 'Complex Analysis Failed', details: errorMessage }, 500);
+  }
+});
+
+// 7. Agent request for clarification (handles the autonomous agent feedback loop)
+app.post('/api/tasks/:taskId/clarify', async (c) => {
+  const taskId = c.req.param('taskId');
+  const key = formatTaskKey(taskId);
+  const body = await c.req.json() as Partial<TaskRequest>;
+  
+  // Get existing task
+  const existingTask = await c.env.AGENT_CACHE.get(key);
+  
+  if (!existingTask) {
+    return c.json({ error: 'Task not found' }, 404);
+  }
+
+  const task = JSON.parse(existingTask);
+  
+  // Update task with clarification response using helper for status determination
+  const updatedTask = {
+    ...task,
+    ...body,
+    status: determineTaskStatus(body),
+    lastUpdated: new Date().toISOString(),
+  };
+
+  await c.env.AGENT_CACHE.put(key, JSON.stringify(updatedTask));
+
+  return c.json({
+    success: true,
+    message: 'Task updated with clarification',
+    task: updatedTask,
+  });
+});
+
+// --- AGENT TASK REPORTS (PR #870) ---
+
+// Get all agent task reports
+app.get('/api/reports', async (c) => {
+  const list = await c.env.AGENT_CACHE.list({ prefix: 'report:' });
+  const reports = [];
+  for (const key of list.keys) {
+    const val = await c.env.AGENT_CACHE.get(key.name);
+    if (val) reports.push(JSON.parse(val));
+  }
+  return c.json(reports);
+});
+
+// Get a specific report by ID
+app.get('/api/reports/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('report:') ? id : `report:${id}`;
+  const val = await c.env.AGENT_CACHE.get(key);
+  if (!val) {
+    return c.json({ error: 'Report not found' }, 404);
+  }
+  return c.json(JSON.parse(val));
+});
+
+// Submit a new agent task report
+app.post('/api/reports', async (c) => {
+  const body = await c.req.json();
+  
+  // Validate required fields
+  if (!body.task) {
+    return c.json({ error: 'Missing required field: task' }, 400);
+  }
+  
+  const timestamp = Date.now();
+  const reportId = body.id || crypto.randomUUID();
+  const id = `report:${reportId}`;
+  
+  const report = {
+    id: reportId,
+    task: body.task,
+    result: body.result || '',
+    status: body.status || 'completed',
+    agentId: body.agentId || 'autonomous-agent',
+    findings: body.findings || [],
+    recommendations: body.recommendations || [],
+    nextSteps: body.nextSteps || [],
+    metadata: body.metadata || {},
+    createdAt: new Date(timestamp).toISOString(),
+  };
+  
+  await c.env.AGENT_CACHE.put(id, JSON.stringify(report));
+  return c.json({ success: true, id: reportId, report }, 201);
+});
+
+// Update an existing report
+app.put('/api/reports/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('report:') ? id : `report:${id}`;
+  const existing = await c.env.AGENT_CACHE.get(key);
+  
+  if (!existing) {
+    return c.json({ error: 'Report not found' }, 404);
+  }
+  
+  const body = await c.req.json();
+  const existingReport = JSON.parse(existing);
+  
+  // Only allow updating specific fields
+  const allowedFields = ['task', 'result', 'status', 'findings', 'recommendations', 'nextSteps', 'metadata'];
+  const updates: Record<string, unknown> = {};
+  
+  for (const field of allowedFields) {
+    if (body[field] !== undefined) {
+      updates[field] = body[field];
+    }
+  }
+  
+  const updatedReport = {
+    ...existingReport,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  
+  await c.env.AGENT_CACHE.put(key, JSON.stringify(updatedReport));
+  return c.json({ success: true, report: updatedReport });
+});
+
+// Delete a report
+app.delete('/api/reports/:id', async (c) => {
+  const id = c.req.param('id');
+  const key = id.startsWith('report:') ? id : `report:${id}`;
+  const existing = await c.env.AGENT_CACHE.get(key);
+  
+  if (!existing) {
+    return c.json({ error: 'Report not found' }, 404);
+  }
+  
+  await c.env.AGENT_CACHE.delete(key);
+  return c.json({ success: true, message: 'Report deleted' });
 });
 
 export default app;

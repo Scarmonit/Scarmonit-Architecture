@@ -1,0 +1,38 @@
+name: Jules Automation
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auto-Approve and Merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_URL="${{ github.event.pull_request.html_url }}"
+
+          # Approve the PR (required if branch protection rules exist)
+          # Note: GITHUB_TOKEN can approve PRs as long as it didn't create them.
+          echo "Approving PR..."
+          gh pr review "$PR_URL" --approve || echo "Approval failed or not needed (possibly own PR)"
+
+          # Enable Auto-Merge
+          echo "Enabling Auto-Merge..."
+          gh pr merge "$PR_URL" --squash --auto

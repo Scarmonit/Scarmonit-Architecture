@@ -12,17 +12,17 @@
   ],
   "scripts": {
     "start": "npm run dev:web",
-    "dev": "npm run dev:web",
-    "install:all": "npm install && cd agent-api && npm install && cd .. && cd desktop-app && npm install && cd .. && cd mcp-server && npm install && cd ..",
-    "dev:web": "cd web-portal && python -m http.server 8080",
-    "dev:api": "cd agent-api && npx wrangler dev",
-    "dev:desktop": "cd desktop-app && npm start",
-    "dev:mcp": "cd mcp-server && npm start",
-    "deploy:web": "cd web-portal && npx wrangler pages deploy . --project-name=scarmonit-www",
-    "deploy:api": "cd agent-api && npx wrangler deploy --env production",
-    "deploy:all": "npm run deploy:web && npm run deploy:api",
-    "test": "echo Tests coming soon",
-    "lint": "echo Linting coming soon"
+    "dev": "npm run dev --workspaces --if-present",
+    "install:all": "npm install",
+    "dev:web": "npm run dev --workspace=web-portal",
+    "dev:api": "npm run dev --workspace=agent-api",
+    "dev:desktop": "npm run dev --workspace=desktop-app",
+    "dev:mcp": "npm run dev --workspace=mcp-server",
+    "deploy:web": "npm run deploy --workspace=web-portal",
+    "deploy:api": "npm run deploy --workspace=agent-api",
+    "deploy:all": "npm run deploy --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
   },
   "repository": {
     "type": "git",
@@ -43,6 +43,7 @@
     "concurrently": "^8.2.0",
     "http-server": "^14.1.1",
     "typescript": "^5.9.3",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^2.1.9"
   }
 }
