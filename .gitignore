@@ -178,3 +178,5 @@ Thumbs.db
 .wrangler/
 .dev.vars
 >>>>>>> Scarmonit
+**/*.pyc
+**/__pycache__/
