@@ -11,7 +11,10 @@ export type HealthSummary = {
   datalore: string;
 };
 
-const client = new McpClient({ baseUrl: 'http://localhost:3000/mcp', timeoutMs: 4000 });
+const client = new McpClient({ 
+  baseUrl: import.meta.env.VITE_MCP_SERVER_URL || 'http://localhost:3000/mcp', 
+  timeoutMs: 4000 
+});
 
 /**
  * Aggregate basic health summary across key services.
