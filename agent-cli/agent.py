@@ -8,9 +8,10 @@ from mcp_client import MCPClient
 class AgentWorker:
     """Single agent that can reason and use MCP tools"""
     
-    def __init__(self, agent_id: str, model: str = "lfm2-1.2b"):
+    def __init__(self, agent_id: str, model: str = "lfm2-1.2b", critic_mode: bool = False):
         self.agent_id = agent_id
         self.model = model
+        self.critic_mode = critic_mode
         self.model_url = "http://127.0.0.1:1234/v1/chat/completions"
         self.dashboard_url = "https://agent.scarmonit.com/api/history"
         # Use the same token as generated before
@@ -207,6 +208,8 @@ ANSWER: <your answer>
     def run(self, task: str) -> dict:
         """Run the agent on a task using ReAct loop"""
         print(f"\n[{self.agent_id}] Starting task: {task}")
+        if self.critic_mode:
+            print(f"[{self.agent_id}] CRITIC MODE ENABLED")
         
         messages = [
             {"role": "system", "content": f"You are an autonomous agent with access to tools. {self.tool_descriptions}\n\nIMPORTANT: Use web_search for current events or anything after your knowledge cutoff. After getting useful tool results, provide ANSWER immediately - do not make unnecessary extra searches. Be concise."}, 
@@ -232,6 +235,21 @@ ANSWER: <your answer>
             
             print(f"[{self.agent_id}] LLM: {response[:200]}...")
             
+            # Critic Step
+            if self.critic_mode:
+                 critic_msg = messages + [{"role": "assistant", "content": response},
+                                          {"role": "user", "content": "CRITIC: Review your last response. Is it correct, safe, and efficient? If not, correct it. If it is fine, output 'APPROVED'."}]
+                 critic_response = self.query_llm(critic_msg)
+                 print(f"[{self.agent_id}] CRITIC: {critic_response[:200]}...")
+
+                 # If critic does NOT approve, we treat its response as the new response
+                 # This handles both corrected TOOL calls, ANSWERs, or just text feedback (thoughts)
+                 # If it's text-only (no TOOL/ANSWER), parse_response handles it as a "thought",
+                 # which adds it to context and prompts the agent again to fix it.
+                 if "APPROVED" not in critic_response:
+                      print(f"[{self.agent_id}] CRITIC REJECTED. Using refined response/critique.")
+                      response = critic_response
+
             parsed = self.parse_response(response)
             self.history.append({"iteration": i+1, "response": response, "parsed": parsed})
             
@@ -270,10 +288,11 @@ ANSWER: <your answer>
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="AI Agent CLI")
     parser.add_argument("--model", type=str, default="lfm2-1.2b", help="Model to use")
+    parser.add_argument("--critic", action="store_true", help="Enable internal critic loop")
     parser.add_argument("task", nargs="?", default="Check docker container status", help="Task to execute")
     args = parser.parse_args()
 
-    agent = AgentWorker("cli-agent", model=args.model)
+    agent = AgentWorker("cli-agent", model=args.model, critic_mode=args.critic)
     result = agent.run(args.task)
     print("\n" + "=" * 50)
     print("RESULT:", json.dumps(result, indent=2))
