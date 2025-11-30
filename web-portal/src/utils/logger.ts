@@ -42,5 +42,5 @@ export function getLogHistory(): LogEntry[] {
 
 // Expose for E2E tests
 if (typeof window !== 'undefined') {
-  (window as unknown as { getLogHistory: typeof getLogHistory }).getLogHistory = getLogHistory
+  (window as unknown as Record<string, unknown>).getLogHistory = getLogHistory
 }

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { 
-  Star, 
-  Send, 
-  CheckCircle2, 
+import {
+  Star,
+  Send,
+  CheckCircle2,
   MessageSquare,
   ThumbsUp,
   Lightbulb,
