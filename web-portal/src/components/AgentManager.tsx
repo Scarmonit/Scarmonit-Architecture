@@ -58,7 +58,7 @@ export function AgentManager() {
     }
   };
 
-  const toggleAgent = (id: string) => {
+  const toggleAgent = async (id: string) => {
     setAgents(prev => prev.map(agent => {
       if (agent.id === id) {
         if (agent.status === 'active') {
@@ -69,6 +69,26 @@ export function AgentManager() {
       }
       return agent;
     }));
+
+    const agent = agents.find(a => a.id === id);
+    if (!agent) return;
+
+    // Only call API when starting/resuming
+    if (agent.status === 'idle' || agent.status === 'paused') {
+      try {
+        await fetch('http://localhost:8787/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task: agent.task,
+            agentId: agent.id,
+            status: 'pending'
+          })
+        });
+      } catch (e) {
+        console.error('Failed to start agent:', e);
+      }
+    }
   };
 
   const filteredAgents = agents.filter(agent => {
