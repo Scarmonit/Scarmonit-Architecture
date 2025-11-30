@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { 
-  FolderArchive, 
-  File, 
-  FileCode, 
-  FileText, 
+import {
+  FolderArchive,
+  File,
+  FileCode,
+  FileText,
   Image as ImageIcon,
   Download,
   Trash2,

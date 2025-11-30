@@ -225,7 +225,7 @@ export class MCPRouterTester {
 
 // Expose to global scope for browser console testing
 if (typeof window !== 'undefined') {
-  (window as unknown as { MCPRouterTester: typeof MCPRouterTester }).MCPRouterTester = MCPRouterTester
+  (window as unknown as Record<string, unknown>).MCPRouterTester = MCPRouterTester
 }
 
 /**
@@ -244,5 +244,5 @@ export async function quickTest(): Promise<void> {
 
 // Expose quick test to global scope
 if (typeof window !== 'undefined') {
-  (window as unknown as { testMCPRouter: typeof quickTest }).testMCPRouter = quickTest
+  (window as unknown as Record<string, unknown>).testMCPRouter = quickTest
 }

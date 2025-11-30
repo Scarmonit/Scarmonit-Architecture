@@ -27,8 +27,8 @@ jobs:
 
       - name: Validate Web Portal (Lint & Build)
         run: |
-          npm run lint -w web-portal
-          npm run build -w web-portal
+          npm run lint -w @scarmonit/web-portal
+          npm run build -w @scarmonit/web-portal
 
       - name: Validate MCP Server
         run: npm test -w mcp-server
