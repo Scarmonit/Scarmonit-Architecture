@@ -1,1 +1,49 @@
-{"name": "scarmonit-architecture", "version": "2.5.0", "license": "MIT", "workspaces": ["web-portal", "agent-api", "desktop-app", "copilot-extension", "mcp-server"], "devDependencies": {"concurrently": "^8.2.0", "http-server": "^14.1.1"}, "scripts": {"install:all": "npm install", "dev": "concurrently \"npm run dev -w web-portal\" \"npm run dev -w agent-api\"", "deploy:all": "concurrently \"npm run deploy -w web-portal\" \"npm run deploy -w agent-api\"", "test": "npm test --workspaces"}}
+{
+  "name": "scarmonit-architecture",
+  "version": "2.5.0",
+  "description": "Unified AI Infrastructure Architecture for Scarmonit",
+  "private": true,
+  "workspaces": [
+    "web-portal",
+    "agent-api",
+    "desktop-app",
+    "copilot-extension",
+    "mcp-server"
+  ],
+  "scripts": {
+    "start": "npm run dev:web",
+    "dev": "npm run dev --workspaces --if-present",
+    "install:all": "npm install",
+    "dev:web": "npm run dev --workspace=web-portal",
+    "dev:api": "npm run dev --workspace=agent-api",
+    "dev:desktop": "npm run dev --workspace=desktop-app",
+    "dev:mcp": "npm run dev --workspace=mcp-server",
+    "deploy:web": "npm run deploy --workspace=web-portal",
+    "deploy:api": "npm run deploy --workspace=agent-api",
+    "deploy:all": "npm run deploy --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Scarmonit/Scarmonit-Architecture.git"
+  },
+  "keywords": [
+    "ai",
+    "infrastructure",
+    "automation",
+    "cloudflare",
+    "workers",
+    "llm",
+    "agents"
+  ],
+  "author": "Scarmonit Industries <Scarmonit@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "http-server": "^14.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4",
+    "vitest": "^2.1.0"
+  }
+}
