@@ -20,12 +20,12 @@ const PORT = 3001
 const MCP_SERVERS = {
   'scarmonit-architecture': {
     command: 'node',
-    args: ['C:\\Users\\scarm\\IdeaProjects\\Scarmonit-Architecture\\mcp-server\\index.js'],
+    args: [process.env.MCP_SERVER_PATH || '../mcp-server/build/index.js'],
     env: { LOG_LEVEL: 'INFO' }
   },
   'llm-framework-devops': {
     command: 'node',
-    args: ['C:\\Users\\scarm\\AppData\\Roaming\\JetBrains\\IntelliJIdea2025.2\\projects\\6173bf63898fe7449cbfe5b586759dcee725bc56\\src\\servers\\devops-mcp-server.js'],
+    args: [process.env.DEVOPS_MCP_PATH || '../llm-framework-devops/src/servers/devops-mcp-server.js'], // Placeholder fallback
     env: { LOG_LEVEL: 'INFO' }
   }
 }

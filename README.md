@@ -25,36 +25,59 @@ Scarmonit-Architecture/
 │   ├── src/             # Electron/Desktop app source
 │   └── package.json
 │
+├── mcp-server/          # MCP Server & Integrations
+│   ├── src/             # TypeScript source
+│   └── package.json
+│
+├── mcp-bridge/          # HTTP Bridge for MCP Server
+│   ├── server.js
+│   └── Dockerfile
+│
 ├── docs/                # Comprehensive documentation
 │   ├── setup.md         # Setup and installation
 │   ├── deployment.md    # Deployment guides
 │   └── api.md           # API documentation
 │
 └── scripts/             # Automation and deployment scripts
-    ├── START_DASHBOARD.sh    # Start dashboard (Linux/Mac)
-    ├── START_DASHBOARD.bat   # Start dashboard (Windows)
-    └── diagnose-activation.ps1  # JetBrains diagnostic
 ```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20+
+- Docker & Docker Compose
 - Git
 - Cloudflare account (for worker deployment)
-- Netlify/Cloudflare Pages (for web deployment)
 
-### Clone & Setup
+### 🐳 Docker Setup (Recommended)
+
+We provide a `docker-compose` setup to run the Web Portal and MCP Server (with Bridge) together.
+
 ```bash
 # Clone the repository
 git clone https://github.com/Scarmonit/Scarmonit-Architecture.git
 cd Scarmonit-Architecture
 
+# Run services
+docker-compose up --build
+```
+
+- **Web Portal:** http://localhost:8080
+- **MCP Bridge:** http://localhost:3000 (Internal: 3001)
+
+### 💻 Local Development
+
+```bash
 # Install all dependencies
 npm run install:all
 
-# Start development environment
+# Start full stack (Web, API, Desktop, MCP)
 npm run dev
+
+# Or start individual components
+npm run dev:web
+npm run dev:api
+npm run dev:mcp
 ```
 
 ## 📦 Components
@@ -99,22 +122,11 @@ Model Context Protocol (MCP) server providing AI tools and integrations:
 - **Documentation Query**: Intelligent search across architecture docs
 - **Datalore Cloud Integration**: Full connectivity for data science notebooks
 
-#### Datalore Cloud Setup:
-```bash
-# From project root:
-npm run dev:mcp
-```
-
-#### Available MCP Tools:
-1. `check_system_status` - Monitor infrastructure health
-2. `query_docs` - Search documentation
-3. `check_datalore_status` - Verify Datalore integration
-
 **Tech Stack:** Node.js, TypeScript, MCP SDK, Datalore Cloud API
 
 ## CI Status
 
-[![Agent API CI](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml/badge.svg?branch=Scarmonit)](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml)
+[![Agent API CI](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Scarmonit/Scarmonit-Architecture/actions/workflows/ci.yml)
 
 ## 🔧 Development
 
@@ -125,35 +137,6 @@ This repository is optimized for AI CLI tools like **Claude Code CLI**, **Cursor
 ```bash
 # Example: Using Claude Code CLI
 code-cli --project=Scarmonit-Architecture --task="Add new API endpoint"
-
-# Example: Quick navigation
-# All components have clear entry points:
-# - web-portal/index.html
-# - agent-api/src/index.ts
-# - desktop-app/src/main.js
-```
-
-### Local Development
-
-**Web Portal:**
-```bash
-cd web-portal
-npm install
-npm run dev
-```
-
-**Agent API:**
-```bash
-cd agent-api
-npm install
-wrangler dev
-```
-
-**Desktop App:**
-```bash
-cd desktop-app
-npm install
-npm start
 ```
 
 ## 🌐 Deployment
@@ -161,14 +144,12 @@ npm start
 ### Web Portal
 ```bash
 cd web-portal
-# Deploy to Cloudflare Pages
 npm run deploy
 ```
 
 ### Agent API
 ```bash
 cd agent-api
-# Deploy to Cloudflare Workers
 wrangler deploy
 ```
 
@@ -184,22 +165,10 @@ npm run deploy:all
 - **[Deployment Guide](docs/deployment.md)** - Production deployment
 - **[API Documentation](docs/api.md)** - API reference
 - **[Architecture Decisions](docs/architecture.md)** - Design decisions
-- **[AI Model Deployment](docs/AI_MODEL_DEPLOYMENT.md)** - Best practices for AI model deployment
-- **[Technical Blog](docs/blog/README.md)** - Insights, tutorials, and tech deep dives
 
 ## 🔐 Environment Variables
 
-Create `.env` files in each component directory:
-
-```env
-# agent-api/.env
-LM_STUDIO_URL=http://localhost:1234/v1
-API_KEY=your_api_key_here
-
-# desktop-app/.env  
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-```
+Create `.env` files in each component directory based on `.env.example`.
 
 ## 🤝 Contributing
 
@@ -213,13 +182,6 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 This project is private and proprietary to Scarmonit Industries.
 
-## 🔗 Links
-
-- **Website:** [https://scarmonit.com](https://scarmonit.com)
-- **Agent Dashboard:** [https://agent.scarmonit.com](https://agent.scarmonit.com)
-- **API Endpoint:** [https://lm.scarmonit.com](https://lm.scarmonit.com)
-- **GitHub:** [https://github.com/Scarmonit](https://github.com/Scarmonit)
-
 ## 📧 Contact
 
 **Email:** Scarmonit@gmail.com
@@ -231,46 +193,3 @@ This project is private and proprietary to Scarmonit Industries.
   <br>
   <em>Intelligence at the Speed of Thought</em>
 </div>
-
-## 🛠️ Troubleshooting & Support
-
-### JetBrains IDE Activation Issues
-If you're experiencing activation problems with JetBrains IDEs (IntelliJ, WebStorm, PyCharm, etc.):
-
-**Run Diagnostic Tool:**
-```powershell
-./scripts/diagnose-activation.ps1
-```
-
-**Common Issues:**
-- Activation fails with corrupted data or DnsFilter error
-- ja-netfilter blocking brucege.com
-- Cannot access activation server
-- Mac "Permission denied" error
-
-**Quick Fixes:**
-- Update plugin to latest version
-- Edit ja-netfilter DNS config if installed
-- Use offline activation if network blocked
-- Fix permissions on Mac: `sudo chmod 777 ~/.config`
-
-**📖 Full Guide:** [docs/JETBRAINS_ACTIVATION_GUIDE.md](docs/JETBRAINS_ACTIVATION_GUIDE.md)
-
-**Support Channels:**
-- WeChat: gejun12311
-- QQ Group: 575733084
-
-### MCP Agent Personas Issues
-If agent personas aren't loading in Copilot Chat:
-
-**Run Diagnostic:**
-```powershell
-.\mcp-server\restart-mcp.ps1
-```
-
-**Test Tools:**
-```
-Run MCP tool list_agents
-```
-
-**📖 Full Guide:** [MCP_AGENT_USAGE.md](MCP_AGENT_USAGE.md)
