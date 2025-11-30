@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  scarmonit-bot:
+    build: .
+    container_name: scarmonit-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ~/.ssh:/root/.ssh:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
