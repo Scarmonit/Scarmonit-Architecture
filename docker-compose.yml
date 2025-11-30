@@ -9,23 +9,20 @@ services:
       - "8080:80"
     environment:
       - VITE_MCP_SERVER_URL=http://localhost:3000/mcp
+      # In Docker network, use service name. But client-side JS runs in browser, so localhost is correct for user access.
+      # If accessing from another container, use http://mcp-bridge:3001/api/tools/...
       - VITE_AGENT_URL=https://agent-api.scarmonit.workers.dev
     networks:
       - scarmonit-net
 
-  mcp-server:
+  mcp-bridge:
     build:
-      context: ./mcp-server
-      dockerfile: Dockerfile
-    environment:
-      - NODE_ENV=production
-      # DATALORE_LICENSE_ID can be passed from .env or host environment
+      context: .
+      dockerfile: mcp-bridge/Dockerfile
+    ports:
+      - "3000:3001" # Map host 3000 (standard MCP bridge port) to container 3001
     networks:
       - scarmonit-net
-    # MCP server runs on stdio by default, but this architecture implies a bridge or network access might be desired later.
-    # For now, we are containerizing it for consistency. If it needs to expose HTTP, the code needs to support it (Bridge/Gateway).
-    # The current code uses StdioServerTransport. To make it accessible to web-portal via HTTP, we would need an HTTP adapter/bridge.
-    # Assuming `mcp-bridge` might be for that, let's check `mcp-bridge` folder.
 
 networks:
   scarmonit-net:
