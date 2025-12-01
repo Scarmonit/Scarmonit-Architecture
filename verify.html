@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Verification</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .status { margin-top: 10px; font-weight: bold; }
+        .working { color: green; }
+        .broken { color: red; }
+        #error-msg { margin-top: 10px; color: red; white-space: pre-wrap; background: #f0f0f0; padding: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <button id="test-btn">Test API Connection</button>
+    <div id="status" class="status">API Status: WAITING</div>
+    <div id="error-msg"></div>
+
+    <script>
+        // Note: The code defines app.get('/health'), not /api/health
+        const API_URL = 'http://localhost:8787/health';
+
+        document.getElementById('test-btn').addEventListener('click', async () => {
+            const statusEl = document.getElementById('status');
+            const errorEl = document.getElementById('error-msg');
+
+            statusEl.textContent = 'API Status: TESTING...';
+            statusEl.className = 'status';
+            errorEl.style.display = 'none';
+
+            try {
+                const response = await fetch(API_URL);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'healthy') {
+                        statusEl.textContent = 'API Status: WORKING';
+                        statusEl.className = 'status working';
+                    } else {
+                        throw new Error('Unexpected response: ' + JSON.stringify(data));
+                    }
+                } else {
+                    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                statusEl.textContent = 'API Status: BROKEN';
+                statusEl.className = 'status broken';
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
